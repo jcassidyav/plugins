@@ -1,10 +1,12 @@
-import { Application, Utils } from '@nativescript/core';
-import { BiometricIDAvailableResult, ERROR_CODES, FingerprintAuthApi, VerifyFingerprintOptions, VerifyFingerprintWithCustomFallbackOptions } from './common';
+import { BiometricIDAvailableResult, ERROR_CODES, FingerprintAuthApi, VerifyFingerprintWithCustomFallbackOptions } from './common';
+import { Application, AndroidActivityResultEventData, Utils, AndroidApplication } from '@nativescript/core';
 
 declare const com: any;
 
 const KEY_NAME = 'fingerprintauth';
 const SECRET_BYTE_ARRAY = Array.create('byte', 16);
+const REQUEST_CODE_CONFIRM_DEVICE_CREDENTIALS = 788; // arbitrary
+
 const AuthenticationCallback = (<any>androidx).biometric.BiometricPrompt.AuthenticationCallback.extend({
 	resolve: null,
 	reject: null,
@@ -21,8 +23,16 @@ const AuthenticationCallback = (<any>androidx).biometric.BiometricPrompt.Authent
 		});
 	},
 	onAuthenticationSucceeded(result): void {
-		result.getCryptoObject().getCipher().doFinal(SECRET_BYTE_ARRAY);
-		this.resolve();
+		try {
+			result.getCryptoObject().getCipher().doFinal(SECRET_BYTE_ARRAY);
+			this.resolve();
+		} catch (error) {
+			console.log(`Error in onAuthenticationSucceeded: ${error}`);
+			this.reject({
+				code: ERROR_CODES.UNEXPECTED_ERROR,
+				message: error,
+			});
+		}
 	},
 });
 
@@ -54,11 +64,11 @@ export class FingerprintAuth implements FingerprintAuthApi {
 				const biometricManager = (<any>androidx).biometric.BiometricManager.from(Utils.android.getApplicationContext());
 				const biometricConstants = (<any>androidx).biometric.BiometricManager;
 				const biometricNoHardwareErrors: Array<number> = [biometricConstants.BIOMETRIC_ERROR_HW_UNAVAILABLE, biometricConstants.BIOMETRIC_ERROR_NO_HARDWARE, biometricConstants.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED, biometricConstants.BIOMETRIC_ERROR_UNSUPPORTED, biometricConstants.BIOMETRIC_ERROR_UNKNOWN];
-
-				if (!biometricManager || biometricNoHardwareErrors.includes(biometricManager.canAuthenticate())) {
+				const canAuthenticate = biometricManager.canAuthenticate();
+				if (!biometricManager || biometricNoHardwareErrors.includes(canAuthenticate)) {
 					// Device doesn't support biometric authentication
 					reject(`Device doesn't support biometric authentication or requires an update`);
-				} else if (biometricManager.canAuthenticate() === (<any>androidx).biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED) {
+				} else if (canAuthenticate === (<any>androidx).biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED || canAuthenticate == biometricConstants.BIOMETRIC_STATUS_UNKNOWN) {
 					// If the user has not enrolled any biometrics, they still might have the device secure so we can fallback
 					// to present the user with the swipe, password, pin device security screen regardless
 					// the developer can handle this resolve by checking the `touch` property and determine if they want to use the
@@ -87,15 +97,11 @@ export class FingerprintAuth implements FingerprintAuthApi {
 	}
 
 	didFingerprintDatabaseChange(): Promise<boolean> {
-		return new Promise((resolve, reject) => {
-			// not implemented for Android
-			// TODO should be possible..
-			resolve(false);
-		});
+		return Promise.resolve(false);
 	}
 
 	// Following: https://developer.android.com/training/sign-in/biometric-auth#java as a guide
-	verifyFingerprint(options: VerifyFingerprintWithCustomFallbackOptions, pinFallback: boolean = false): Promise<void | string> {
+	verifyFingerprint(options: VerifyFingerprintWithCustomFallbackOptions): Promise<void | string> {
 		return new Promise((resolve, reject) => {
 			try {
 				if (!this.keyguardManager) {
@@ -111,13 +117,19 @@ export class FingerprintAuth implements FingerprintAuthApi {
 						message: 'Secure lock screen hasn\'t been set up.\n Go to "Settings -> Security -> Screenlock" to set up a lock screen.',
 					});
 				}
+				const pinFallback = options?.android?.pinFallback;
 
-				FingerprintAuth.generateSecretKey();
+				let cryptoObject;
 
-				const cipher = this.getCipher();
-				const secretKey = this.getSecretKey();
-				cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, secretKey);
-				const cryptoObject = new (<any>androidx).biometric.BiometricPrompt.CryptoObject(cipher);
+				if (!pinFallback || android.os.Build.VERSION.SDK_INT >= 30) {
+					FingerprintAuth.generateSecretKey(pinFallback);
+
+					const cipher = this.getCipher();
+					const secretKey = this.getSecretKey();
+					cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, secretKey);
+					//const cryptoObject = new (<any>androidx).biometric.BiometricPrompt.CryptoObject(cipher);
+					cryptoObject = (<any>org.nativescript).plugins.fingerprint.Utils.createCryptoObject(cipher);
+				}
 
 				const executor = (<any>androidx).core.content.ContextCompat.getMainExecutor(Utils.android.getApplicationContext());
 				let authCallback = new AuthenticationCallback();
@@ -126,19 +138,19 @@ export class FingerprintAuth implements FingerprintAuthApi {
 
 				this.biometricPrompt = new (<any>androidx).biometric.BiometricPrompt(this.getActivity(), executor, authCallback);
 
-				if (pinFallback) {
-					const info = new (<any>androidx).biometric.BiometricPrompt.PromptInfo.Builder()
-						.setTitle(options.title ? options.title : "Login")
+				if (pinFallback && android.os.Build.VERSION.SDK_INT < 30) {
+					this.promptForPin(resolve, reject, options);
+				} else if (pinFallback) {
+					const builder = new (<any>androidx).biometric.BiometricPrompt.PromptInfo.Builder()
+						.setTitle(options.title ? options.title : 'Login')
 						.setSubtitle(options.subTitle ? options.subTitle : null)
 						.setDescription(options.message ? options.message : null)
 						.setConfirmationRequired(options.confirm ? options.confirm : false) // Confirm button after verify biometrics=
-						.setAllowedAuthenticators((<any>androidx).biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG | (<any>androidx).biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL) // PIN Fallback or Cancel
-						.build();
-
-					this.biometricPrompt.authenticate(info, cryptoObject);
+						.setAllowedAuthenticators((<any>androidx).biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG | (<any>androidx).biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL); // PIN Fallback or Cancel
+					this.biometricPrompt.authenticate(builder.build(), cryptoObject);
 				} else {
 					const info = new (<any>androidx).biometric.BiometricPrompt.PromptInfo.Builder()
-						.setTitle(options.title ? options.title : "Login")
+						.setTitle(options.title ? options.title : 'Login')
 						.setSubtitle(options.subTitle ? options.subTitle : null)
 						.setDescription(options.message ? options.message : null)
 						.setConfirmationRequired(options.confirm ? options.confirm : false) // Confirm button after verify biometrics=
@@ -159,7 +171,7 @@ export class FingerprintAuth implements FingerprintAuthApi {
 	}
 
 	verifyFingerprintWithCustomFallback(options: VerifyFingerprintWithCustomFallbackOptions): Promise<any> {
-		return this.verifyFingerprint(options, false);
+		return this.verifyFingerprint(options);
 	}
 
 	close(): void {
@@ -170,23 +182,43 @@ export class FingerprintAuth implements FingerprintAuthApi {
 	 * Creates a symmetric key in the Android Key Store which can only be used after the user has
 	 * authenticated with device credentials within the last X seconds.
 	 */
-	private static generateSecretKey(): void {
+	private static generateSecretKey(pinFallback: boolean): void {
 		const keyStore = java.security.KeyStore.getInstance('AndroidKeyStore');
 		keyStore.load(null);
 		const keyGenerator = javax.crypto.KeyGenerator.getInstance(android.security.keystore.KeyProperties.KEY_ALGORITHM_AES, 'AndroidKeyStore');
 
-		keyGenerator.init(
-			new android.security.keystore.KeyGenParameterSpec.Builder(KEY_NAME, android.security.keystore.KeyProperties.PURPOSE_ENCRYPT | android.security.keystore.KeyProperties.PURPOSE_DECRYPT)
-				.setBlockModes([android.security.keystore.KeyProperties.BLOCK_MODE_CBC])
-				.setEncryptionPaddings([android.security.keystore.KeyProperties.ENCRYPTION_PADDING_PKCS7])
-				.setUserAuthenticationRequired(true)
-				.setInvalidatedByBiometricEnrollment(true)
-				// .setUserAuthenticationValidityDurationSeconds(duration ? duration : 5)
-				.build()
-		);
+		const builder = new android.security.keystore.KeyGenParameterSpec.Builder(KEY_NAME, android.security.keystore.KeyProperties.PURPOSE_ENCRYPT | android.security.keystore.KeyProperties.PURPOSE_DECRYPT).setBlockModes([android.security.keystore.KeyProperties.BLOCK_MODE_CBC]).setEncryptionPaddings([android.security.keystore.KeyProperties.ENCRYPTION_PADDING_PKCS7]).setUserAuthenticationRequired(true);
+		// .setUserAuthenticationValidityDurationSeconds(duration ? duration : 5)
+
+		if (pinFallback) {
+			builder.setUserAuthenticationParameters(0 /* duration */, android.security.keystore.KeyProperties.AUTH_BIOMETRIC_STRONG | android.security.keystore.KeyProperties.AUTH_DEVICE_CREDENTIAL);
+		}
+		builder.setInvalidatedByBiometricEnrollment(true);
+		keyGenerator.init(builder.build());
 		keyGenerator.generateKey();
 	}
+	public promptForPin(resolve, reject, options) {
+		const onActivityResult = (data: AndroidActivityResultEventData) => {
+			if (data.requestCode === REQUEST_CODE_CONFIRM_DEVICE_CREDENTIALS) {
+				if (data.resultCode === android.app.Activity.RESULT_OK) {
+					// OK = -1
+					// the user has just authenticated via the ConfirmDeviceCredential activity
+					resolve();
+				} else {
+					// the user has quit the activity without providing credentials
+					reject({
+						code: ERROR_CODES.USER_CANCELLED,
+						message: 'User cancelled.',
+					});
+				}
+			}
+			Application.android.off(AndroidApplication.activityResultEvent, onActivityResult);
+		};
 
+		Application.android.on(AndroidApplication.activityResultEvent, onActivityResult);
+
+		this.showAuthenticationScreen(options);
+	}
 	private getSecretKey() {
 		const keyStore = java.security.KeyStore.getInstance('AndroidKeyStore');
 
@@ -201,5 +233,16 @@ export class FingerprintAuth implements FingerprintAuthApi {
 
 	private getActivity(): any /* android.app.Activity */ {
 		return Application.android.foregroundActivity || Application.android.startActivity;
+	}
+
+	/**
+	 * Starts the built-in Android ConfirmDeviceCredential activity.
+	 */
+	private showAuthenticationScreen(options): void {
+		// https://developer.android.com/reference/android/app/KeyguardManager#createConfirmDeviceCredentialIntent(java.lang.CharSequence,%2520java.lang.CharSequence)
+		const intent = (this.keyguardManager as any).createConfirmDeviceCredentialIntent(options && options.title ? options.title : null, options && options.fallbackMessage ? options.fallbackMessage : null);
+		if (intent !== null) {
+			this.getActivity().startActivityForResult(intent, REQUEST_CODE_CONFIRM_DEVICE_CREDENTIALS);
+		}
 	}
 }

@@ -38,6 +38,12 @@ export interface VerifyFingerprintWithCustomFallbackOptions extends VerifyFinger
 	 * Default: 'Enter password'.
 	 */
 	fallbackMessage?: string;
+	android?: {
+		/***
+		 * Allow Fallback to Pin on Android
+		 */
+		pinFallback: boolean;
+	};
 }
 
 export interface BiometricIDAvailableResult {
