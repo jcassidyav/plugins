@@ -200,7 +200,7 @@ export class FingerprintAuth implements FingerprintAuthApi {
 	}
 
 	close(): void {
-		this.biometricPrompt.cancelAuthentication();
+		this.biometricPrompt?.cancelAuthentication();
 	}
 
 	/**

@@ -37,20 +37,37 @@ export interface VerifyFingerprintWithCustomFallbackOptions extends VerifyFinger
 	/**
 	 * The optional button label when scanning the fingerprint fails.
 	 * Default: 'Enter password'.
+	 *
+	 * Android:  When pinFallback is true this will be the text displayed on the pin dialog.
+	 * 			 When pinFallback is false this will be the Negative button text on the Biometric Prompt.
 	 */
 	fallbackMessage?: string;
 	android?: {
 		/***
-		 * Allow Fallback to Pin on Android
+		 * Allow Fallback to Pin on Android - note if true no cryptographic operations will happen and face id is not available.
 		 */
 		pinFallback: boolean;
 	};
 }
 
 export interface BiometricIDAvailableResult {
+	/**
+	 * Has Bio
+	 *
+	 * Note: will be true if no bio available on android but device is secure ( has pin etc. set).
+	 */
 	any: boolean;
+	/***
+	 * IOS Only
+	 */
 	touch?: boolean;
+	/***
+	 * IOS Only
+	 */
 	face?: boolean;
+	/***
+	 * Android Only
+	 */
 	biometrics?: boolean;
 }
 
@@ -72,6 +89,9 @@ export interface FingerprintAuthApi {
 	 */
 	verifyFingerprintWithCustomFallback(options: VerifyFingerprintWithCustomFallbackOptions): Promise<BioMetricResult>;
 
+	/**
+	 * Note will not do anyting on android if using pin fallback.
+	 */
 	close(): void;
 }
 
