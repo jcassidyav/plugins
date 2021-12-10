@@ -7,10 +7,10 @@ const KEY_NAME = 'fingerprintauth';
 const SECRET_BYTE_ARRAY = Array.create('byte', 16);
 const REQUEST_CODE_CONFIRM_DEVICE_CREDENTIALS = 788; // arbitrary
 
-const AuthenticationCallback = (<any>androidx).biometric.BiometricPrompt.AuthenticationCallback.extend({
+const AuthenticationCallback = (<any>androidx.biometric.BiometricPrompt.AuthenticationCallback).extend({
 	resolve: null,
 	reject: null,
-	onAuthenticationError(code, error) {
+	onAuthenticationError(code: number, error: string) {
 		// TODO map code to response
 
 		this.reject({
@@ -24,7 +24,7 @@ const AuthenticationCallback = (<any>androidx).biometric.BiometricPrompt.Authent
 			message: 'Fingerprint not recognized.',
 		});
 	},
-	onAuthenticationSucceeded(result): void {
+	onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult): void {
 		try {
 			if (result.getCryptoObject()) {
 				result.getCryptoObject().getCipher().doFinal(SECRET_BYTE_ARRAY);
@@ -68,14 +68,14 @@ export class FingerprintAuth implements FingerprintAuthApi {
 					return;
 				}
 
-				const biometricManager = (<any>androidx).biometric.BiometricManager.from(Utils.android.getApplicationContext());
-				const biometricConstants = (<any>androidx).biometric.BiometricManager;
-				const biometricNoHardwareErrors: Array<number> = [biometricConstants.BIOMETRIC_ERROR_HW_UNAVAILABLE, biometricConstants.BIOMETRIC_ERROR_NO_HARDWARE, biometricConstants.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED, biometricConstants.BIOMETRIC_ERROR_UNSUPPORTED, biometricConstants.BIOMETRIC_ERROR_UNKNOWN];
+				const biometricManager = androidx.biometric.BiometricManager.from(Utils.android.getApplicationContext());
+				const biometricConstants = androidx.biometric.BiometricManager;
+				const biometricNoHardwareErrors: Array<number> = [biometricConstants.BIOMETRIC_ERROR_HW_UNAVAILABLE, biometricConstants.BIOMETRIC_ERROR_NO_HARDWARE, biometricConstants.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED, biometricConstants.BIOMETRIC_ERROR_UNSUPPORTED];
 				const canAuthenticate = biometricManager.canAuthenticate();
 				if (!biometricManager || biometricNoHardwareErrors.includes(canAuthenticate)) {
 					// Device doesn't support biometric authentication
 					reject(`Device doesn't support biometric authentication or requires an update`);
-				} else if (canAuthenticate === (<any>androidx).biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED || canAuthenticate == biometricConstants.BIOMETRIC_STATUS_UNKNOWN) {
+				} else if (canAuthenticate === androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED || canAuthenticate == biometricConstants.BIOMETRIC_STATUS_UNKNOWN) {
 					// If the user has not enrolled any biometrics, they still might have the device secure so we can fallback
 					// to present the user with the swipe, password, pin device security screen regardless
 					// the developer can handle this resolve by checking the `touch` property and determine if they want to use the
@@ -134,35 +134,35 @@ export class FingerprintAuth implements FingerprintAuthApi {
 					const cipher = this.getCipher();
 					const secretKey = this.getSecretKey();
 					cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, secretKey);
-					//const cryptoObject = new (<any>androidx).biometric.BiometricPrompt.CryptoObject(cipher);
-					cryptoObject = (<any>org.nativescript).plugins.fingerprint.Utils.createCryptoObject(cipher);
+
+					cryptoObject = org.nativescript.plugins.fingerprint.Utils.createCryptoObject(cipher);
 				}
 
-				const executor = (<any>androidx).core.content.ContextCompat.getMainExecutor(Utils.android.getApplicationContext());
+				const executor = androidx.core.content.ContextCompat.getMainExecutor(Utils.android.getApplicationContext());
 				let authCallback = new AuthenticationCallback();
 				authCallback.resolve = resolve;
 				authCallback.reject = reject;
 
-				this.biometricPrompt = new (<any>androidx).biometric.BiometricPrompt(this.getActivity(), executor, authCallback);
+				this.biometricPrompt = new androidx.biometric.BiometricPrompt(this.getActivity(), executor, authCallback);
 
 				if (pinFallback && android.os.Build.VERSION.SDK_INT < 30) {
 					this.promptForPin(resolve, reject, options);
 				} else if (pinFallback) {
-					const builder = new (<any>androidx).biometric.BiometricPrompt.PromptInfo.Builder()
+					const builder = new androidx.biometric.BiometricPrompt.PromptInfo.Builder()
 						.setTitle(options.title ? options.title : 'Login')
 						.setSubtitle(options.subTitle ? options.subTitle : null)
 						.setDescription(options.message ? options.message : null)
 						.setConfirmationRequired(options.confirm ? options.confirm : false) // Confirm button after verify biometrics=
-						.setAllowedAuthenticators((<any>androidx).biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG | (<any>androidx).biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL); // PIN Fallback or Cancel
+						.setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG | androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL); // PIN Fallback or Cancel
 					this.biometricPrompt.authenticate(builder.build());
 				} else {
-					const info = new (<any>androidx).biometric.BiometricPrompt.PromptInfo.Builder()
+					const info = new androidx.biometric.BiometricPrompt.PromptInfo.Builder()
 						.setTitle(options.title ? options.title : 'Login')
 						.setSubtitle(options.subTitle ? options.subTitle : null)
 						.setDescription(options.message ? options.message : null)
 						.setConfirmationRequired(options.confirm ? options.confirm : false) // Confirm button after verify biometrics=
 						.setNegativeButtonText(options.fallbackMessage ? options.fallbackMessage : 'Enter your password') // PIN Fallback or Cancel
-						.setAllowedAuthenticators((<any>androidx).biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG) // PIN Fallback or Cancel
+						.setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG) // PIN Fallback or Cancel
 						.build();
 
 					this.biometricPrompt.authenticate(info, cryptoObject);
