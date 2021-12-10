@@ -11,11 +11,29 @@ const AuthenticationCallback = (<any>androidx.biometric.BiometricPrompt.Authenti
 	resolve: null,
 	reject: null,
 	onAuthenticationError(code: number, error: string) {
-		// TODO map code to response
+		let returnCode: ERROR_CODES;
+		let message: string;
+
+		switch (code) {
+			case androidx.biometric.BiometricPrompt.ERROR_CANCELED: {
+				returnCode = ERROR_CODES.USER_CANCELLED;
+				message = 'User Canceled';
+				break;
+			}
+			case androidx.biometric.BiometricPrompt.ERROR_NEGATIVE_BUTTON: {
+				returnCode = ERROR_CODES.PASSWORD_FALLBACK_SELECTED;
+				message = 'Negative Button Pressed';
+				break;
+			}
+			default: {
+				returnCode = ERROR_CODES.RECOVERABLE_ERROR;
+				message = error;
+			}
+		}
 
 		this.reject({
-			code: ERROR_CODES.RECOVERABLE_ERROR,
-			message: error,
+			code: returnCode,
+			message,
 		});
 	},
 	onAuthenticationFailed() {
