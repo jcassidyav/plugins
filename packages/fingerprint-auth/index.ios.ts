@@ -1,5 +1,5 @@
 import { Utils } from '@nativescript/core';
-import { BiometricIDAvailableResult, FingerprintAuthApi, VerifyFingerprintOptions, VerifyFingerprintWithCustomFallbackOptions } from './common';
+import { BiometricIDAvailableResult, BioMetricResult, ERROR_CODES, FingerprintAuthApi, VerifyFingerprintOptions, VerifyFingerprintWithCustomFallbackOptions } from './common';
 
 const keychainItemIdentifier = 'TouchIDKey';
 let keychainItemServiceName = null;
@@ -71,7 +71,7 @@ export class FingerprintAuth implements FingerprintAuthApi {
 	/**
 	 * this 'default' method uses keychain instead of localauth so the passcode fallback can be used
 	 */
-	verifyFingerprint(options: VerifyFingerprintOptions): Promise<void | string> {
+	verifyFingerprint(options: VerifyFingerprintOptions): Promise<BioMetricResult> {
 		return new Promise((resolve, reject) => {
 			try {
 				if (keychainItemServiceName === null) {
@@ -95,13 +95,22 @@ export class FingerprintAuth implements FingerprintAuthApi {
 				// Start the query and the fingerprint scan and/or device passcode validation
 				const res = SecItemCopyMatching(query, null);
 				if (res === 0) {
-					resolve();
+					resolve({
+						code: ERROR_CODES.SUCCESS,
+						message: 'All OK',
+					});
 				} else {
-					reject();
+					reject({
+						code: ERROR_CODES.UNEXPECTED_ERROR,
+						message: 'SecItemCopyMatching Failed',
+					});
 				}
 			} catch (ex) {
 				console.log(`Error in fingerprint-auth.verifyFingerprint: ${ex}`);
-				reject(ex);
+				reject({
+					code: ERROR_CODES.UNEXPECTED_ERROR,
+					message: ex,
+				});
 			}
 		});
 	}
@@ -109,7 +118,7 @@ export class FingerprintAuth implements FingerprintAuthApi {
 	/**
 	 * This implementation uses LocalAuthentication and has no built-in passcode fallback
 	 */
-	verifyFingerprintWithCustomFallback(options: VerifyFingerprintWithCustomFallbackOptions, usePasscodeFallback = false): Promise<void> {
+	verifyFingerprintWithCustomFallback(options: VerifyFingerprintWithCustomFallbackOptions, usePasscodeFallback = false): Promise<BioMetricResult> {
 		return new Promise((resolve, reject) => {
 			try {
 				this.laContext = LAContext.new();
@@ -124,7 +133,10 @@ export class FingerprintAuth implements FingerprintAuthApi {
 				}
 				this.laContext.evaluatePolicyLocalizedReasonReply(usePasscodeFallback ? LAPolicy.DeviceOwnerAuthentication : LAPolicy.DeviceOwnerAuthenticationWithBiometrics, message, (ok, error) => {
 					if (ok) {
-						resolve();
+						resolve({
+							code: ERROR_CODES.SUCCESS,
+							message: 'All OK',
+						});
 					} else {
 						reject({
 							code: error.code,

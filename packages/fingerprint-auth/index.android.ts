@@ -1,4 +1,4 @@
-import { BiometricIDAvailableResult, ERROR_CODES, FingerprintAuthApi, VerifyFingerprintWithCustomFallbackOptions } from './common';
+import { BiometricIDAvailableResult, ERROR_CODES, FingerprintAuthApi, VerifyFingerprintWithCustomFallbackOptions, BioMetricResult } from './common';
 import { Application, AndroidActivityResultEventData, Utils, AndroidApplication } from '@nativescript/core';
 
 declare const com: any;
@@ -11,6 +11,8 @@ const AuthenticationCallback = (<any>androidx).biometric.BiometricPrompt.Authent
 	resolve: null,
 	reject: null,
 	onAuthenticationError(code, error) {
+		// TODO map code to response
+
 		this.reject({
 			code: ERROR_CODES.RECOVERABLE_ERROR,
 			message: error,
@@ -27,7 +29,10 @@ const AuthenticationCallback = (<any>androidx).biometric.BiometricPrompt.Authent
 			if (result.getCryptoObject()) {
 				result.getCryptoObject().getCipher().doFinal(SECRET_BYTE_ARRAY);
 			}
-			this.resolve();
+			this.resolve({
+				code: ERROR_CODES.SUCCESS,
+				message: 'All OK',
+			});
 		} catch (error) {
 			console.log(`Error in onAuthenticationSucceeded: ${error}`);
 			this.reject({
@@ -103,8 +108,8 @@ export class FingerprintAuth implements FingerprintAuthApi {
 	}
 
 	// Following: https://developer.android.com/training/sign-in/biometric-auth#java as a guide
-	verifyFingerprint(options: VerifyFingerprintWithCustomFallbackOptions): Promise<void | string> {
-		return new Promise((resolve, reject) => {
+	verifyFingerprint(options: VerifyFingerprintWithCustomFallbackOptions): Promise<BioMetricResult> {
+		return new Promise<BioMetricResult>((resolve, reject) => {
 			try {
 				if (!this.keyguardManager) {
 					reject({
@@ -172,7 +177,7 @@ export class FingerprintAuth implements FingerprintAuthApi {
 		});
 	}
 
-	verifyFingerprintWithCustomFallback(options: VerifyFingerprintWithCustomFallbackOptions): Promise<any> {
+	verifyFingerprintWithCustomFallback(options: VerifyFingerprintWithCustomFallbackOptions): Promise<BioMetricResult> {
 		return this.verifyFingerprint(options);
 	}
 
@@ -202,9 +207,13 @@ export class FingerprintAuth implements FingerprintAuthApi {
 				if (data.resultCode === android.app.Activity.RESULT_OK) {
 					// OK = -1
 					// the user has just authenticated via the ConfirmDeviceCredential activity
-					resolve();
+					resolve({
+						code: ERROR_CODES.SUCCESS,
+						message: 'All OK',
+					});
 				} else {
-					// the user has quit the activity without providing credentials
+					// the user has quit the activity without providing credendials
+
 					reject({
 						code: ERROR_CODES.USER_CANCELLED,
 						message: 'User cancelled.',

@@ -6,10 +6,10 @@ export declare class FingerprintAuth implements FingerprintAuthApi {
 	/**
 	 * this 'default' method uses keychain instead of localauth so the passcode fallback can be used
 	 */
-	verifyFingerprint(options: VerifyFingerprintWithCustomFallbackOptions): Promise<void | string>;
+	verifyFingerprint(options: VerifyFingerprintWithCustomFallbackOptions): Promise<BioMetricResult>;
 	/**
 	 * This implementation uses LocalAuthentication and has no built-in passcode fallback
 	 */
-	verifyFingerprintWithCustomFallback(options: VerifyFingerprintWithCustomFallbackOptions, usePasscodeFallback?: boolean): Promise<void>;
+	verifyFingerprintWithCustomFallback(options: VerifyFingerprintWithCustomFallbackOptions, usePasscodeFallback?: boolean): Promise<BioMetricResult>;
 	close(): void;
 }

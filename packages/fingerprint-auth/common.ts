@@ -1,5 +1,6 @@
 export enum ERROR_CODES {
 	PASSWORD_FALLBACK_SELECTED = -3, // historically this is what iOS uses, so using that as well
+	SUCCESS = 0,
 	DEVELOPER_ERROR = 10,
 	NOT_AVAILABLE = 20,
 	NOT_CONFIGURED = 30,
@@ -63,13 +64,18 @@ export interface FingerprintAuthApi {
 	 * On Android, when 'useCustomAndroidUI' is set to 'true', and the user opted for manually entering the password,
 	 * this method may return a string (the entered password) for you to compare to the actual password.
 	 */
-	verifyFingerprint(options: VerifyFingerprintOptions): Promise<void | string>;
+	verifyFingerprint(options: VerifyFingerprintOptions): Promise<BioMetricResult>;
 
 	/**
 	 * This implementation uses LocalAuthentication and has no built-in passcode fallback on iOS.
 	 * On Android this is exactly the same as 'verifyFingerprint'
 	 */
-	verifyFingerprintWithCustomFallback(options: VerifyFingerprintWithCustomFallbackOptions): Promise<void>;
+	verifyFingerprintWithCustomFallback(options: VerifyFingerprintWithCustomFallbackOptions): Promise<BioMetricResult>;
 
 	close(): void;
+}
+
+export interface BioMetricResult {
+	code: ERROR_CODES;
+	message: string;
 }
