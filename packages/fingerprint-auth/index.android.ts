@@ -24,7 +24,9 @@ const AuthenticationCallback = (<any>androidx).biometric.BiometricPrompt.Authent
 	},
 	onAuthenticationSucceeded(result): void {
 		try {
-			result.getCryptoObject().getCipher().doFinal(SECRET_BYTE_ARRAY);
+			if (result.getCryptoObject()) {
+				result.getCryptoObject().getCipher().doFinal(SECRET_BYTE_ARRAY);
+			}
 			this.resolve();
 		} catch (error) {
 			console.log(`Error in onAuthenticationSucceeded: ${error}`);
@@ -121,8 +123,8 @@ export class FingerprintAuth implements FingerprintAuthApi {
 
 				let cryptoObject;
 
-				if (!pinFallback || android.os.Build.VERSION.SDK_INT >= 30) {
-					FingerprintAuth.generateSecretKey(pinFallback);
+				if (!pinFallback) {
+					FingerprintAuth.generateSecretKey();
 
 					const cipher = this.getCipher();
 					const secretKey = this.getSecretKey();
@@ -147,7 +149,7 @@ export class FingerprintAuth implements FingerprintAuthApi {
 						.setDescription(options.message ? options.message : null)
 						.setConfirmationRequired(options.confirm ? options.confirm : false) // Confirm button after verify biometrics=
 						.setAllowedAuthenticators((<any>androidx).biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG | (<any>androidx).biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL); // PIN Fallback or Cancel
-					this.biometricPrompt.authenticate(builder.build(), cryptoObject);
+					this.biometricPrompt.authenticate(builder.build());
 				} else {
 					const info = new (<any>androidx).biometric.BiometricPrompt.PromptInfo.Builder()
 						.setTitle(options.title ? options.title : 'Login')
@@ -182,18 +184,15 @@ export class FingerprintAuth implements FingerprintAuthApi {
 	 * Creates a symmetric key in the Android Key Store which can only be used after the user has
 	 * authenticated with device credentials within the last X seconds.
 	 */
-	private static generateSecretKey(pinFallback: boolean): void {
+	private static generateSecretKey(): void {
 		const keyStore = java.security.KeyStore.getInstance('AndroidKeyStore');
 		keyStore.load(null);
 		const keyGenerator = javax.crypto.KeyGenerator.getInstance(android.security.keystore.KeyProperties.KEY_ALGORITHM_AES, 'AndroidKeyStore');
 
 		const builder = new android.security.keystore.KeyGenParameterSpec.Builder(KEY_NAME, android.security.keystore.KeyProperties.PURPOSE_ENCRYPT | android.security.keystore.KeyProperties.PURPOSE_DECRYPT).setBlockModes([android.security.keystore.KeyProperties.BLOCK_MODE_CBC]).setEncryptionPaddings([android.security.keystore.KeyProperties.ENCRYPTION_PADDING_PKCS7]).setUserAuthenticationRequired(true);
-		// .setUserAuthenticationValidityDurationSeconds(duration ? duration : 5)
-
-		if (pinFallback) {
-			builder.setUserAuthenticationParameters(0 /* duration */, android.security.keystore.KeyProperties.AUTH_BIOMETRIC_STRONG | android.security.keystore.KeyProperties.AUTH_DEVICE_CREDENTIAL);
+		if (android.os.Build.VERSION.SDK_INT > 23) {
+			builder.setInvalidatedByBiometricEnrollment(true);
 		}
-		builder.setInvalidatedByBiometricEnrollment(true);
 		keyGenerator.init(builder.build());
 		keyGenerator.generateKey();
 	}
