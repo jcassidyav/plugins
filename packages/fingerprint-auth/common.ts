@@ -42,12 +42,32 @@ export interface VerifyFingerprintWithCustomFallbackOptions extends VerifyFinger
 	 * 			 When pinFallback is false this will be the Negative button text on the Biometric Prompt.
 	 */
 	fallbackMessage?: string;
-	android?: {
-		/***
-		 * Allow Fallback to Pin on Android - note if true no cryptographic operations will happen and face id is not available.
-		 */
-		pinFallback: boolean;
-	};
+	android?: AndroidOptions;
+}
+
+export interface AndroidOptions {
+	/***
+	 * Allow Fallback to Pin on Android - note if true no cryptographic operations will happen and face id is not available.
+	 */
+	pinFallback?: boolean;
+
+	/**
+	 * Name of the key to use for crypto operations.
+	 *
+	 * Will be created if it does not exist.
+	 * Is not used if pinFallback is true.
+	 */
+	keyName?: string;
+
+	/**
+	 * If set and pinFallback is true, and keyName is set then this string will be encrypted via the Biometric controlled Key.
+	 */
+	encryptText?: string;
+
+	/**
+	 * If set and pinFallback is true, and keyName is set then this string will be decrypted via the Biometric controlled Key.
+	 */
+	decryptText?: string;
 }
 
 export interface BiometricIDAvailableResult {

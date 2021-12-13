@@ -1,4 +1,4 @@
-import { BiometricIDAvailableResult, ERROR_CODES, FingerprintAuthApi, VerifyFingerprintWithCustomFallbackOptions, BioMetricResult } from './common';
+import { BiometricIDAvailableResult, ERROR_CODES, FingerprintAuthApi, VerifyFingerprintWithCustomFallbackOptions, BioMetricResult, AndroidOptions } from './common';
 import { Application, AndroidActivityResultEventData, Utils, AndroidApplication } from '@nativescript/core';
 
 declare const com: any;
@@ -147,7 +147,7 @@ export class FingerprintAuth implements FingerprintAuthApi {
 				let cryptoObject;
 
 				if (!pinFallback) {
-					FingerprintAuth.generateSecretKey();
+					FingerprintAuth.generateSecretKey(options.android);
 
 					const cipher = this.getCipher();
 					const secretKey = this.getSecretKey();
@@ -207,11 +207,20 @@ export class FingerprintAuth implements FingerprintAuthApi {
 	 * Creates a symmetric key in the Android Key Store which can only be used after the user has
 	 * authenticated with device credentials within the last X seconds.
 	 */
-	private static generateSecretKey(): void {
+	private static generateSecretKey(options: AndroidOptions): void {
 		const keyStore = java.security.KeyStore.getInstance('AndroidKeyStore');
 		keyStore.load(null);
-		const keyGenerator = javax.crypto.KeyGenerator.getInstance(android.security.keystore.KeyProperties.KEY_ALGORITHM_AES, 'AndroidKeyStore');
 
+		if (options.keyName && options.decryptText) {
+			const key = keyStore.getKey(KEY_NAME, null);
+			if (key) return;
+			// key already exists
+			else {
+				// need to reject as can neve decrypt without a key.
+			}
+		}
+
+		const keyGenerator = javax.crypto.KeyGenerator.getInstance(android.security.keystore.KeyProperties.KEY_ALGORITHM_AES, 'AndroidKeyStore');
 		const builder = new android.security.keystore.KeyGenParameterSpec.Builder(KEY_NAME, android.security.keystore.KeyProperties.PURPOSE_ENCRYPT | android.security.keystore.KeyProperties.PURPOSE_DECRYPT).setBlockModes([android.security.keystore.KeyProperties.BLOCK_MODE_CBC]).setEncryptionPaddings([android.security.keystore.KeyProperties.ENCRYPTION_PADDING_PKCS7]).setUserAuthenticationRequired(true);
 		if (android.os.Build.VERSION.SDK_INT > 23) {
 			builder.setInvalidatedByBiometricEnrollment(true);
