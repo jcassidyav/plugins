@@ -35,7 +35,7 @@ export class DemoSharedFingerprintAuth extends DemoSharedBase {
 		this.fingerprintAuth
 			.verifyFingerprint({
 				title: 'Enter your password',
-				message: 'Scan yer finger' // optional
+				message: 'Scan yer finger', // optional
 			})
 			.then(() => this.set('status', 'Biometric ID / passcode OK'))
 			.catch((err) => {
@@ -47,34 +47,29 @@ export class DemoSharedFingerprintAuth extends DemoSharedBase {
 			});
 	}
 
-	doVerifyFingerprintWithCustomUI(): void {
+	doVerifyFingerprintWithPinFallBack(): void {
 		this.fingerprintAuth
 			.verifyFingerprint({
 				title: 'Enter your password',
 				message: 'Scan yer finger', // optional
+				android: { pinFallback: true },
 			})
-			.then((enteredPassword?: string) => {
-				if (enteredPassword === undefined) {
-					this.set('status', 'Biometric ID OK');
-				} else {
-					// compare enteredPassword to the one the user previously configured for your app (which is not the users system password!)
-					if (enteredPassword === CONFIGURED_PASSWORD) {
-						this.set('status', 'Biometric ID OK, using password');
-					} else {
-						this.set('status', `Wrong password. Try '${CONFIGURED_PASSWORD}' 😉`);
-					}
-				}
+			.then(() => {
+				this.set('status', 'Biometric ID OK');
 			})
 			.catch((err) => this.set('status', `Biometric ID NOT OK: " + ${JSON.stringify(err)}`));
 	}
 
 	doVerifyFingerprintWithCustomFallback(): void {
 		this.fingerprintAuth
-			.verifyFingerprintWithCustomFallback({
-				title: 'Enter your password',
-				message: 'Scan yer finger', // optional
-				fallbackMessage: 'Enter PIN' // optional
-			}, true)
+			.verifyFingerprintWithCustomFallback(
+				{
+					title: 'Enter your password',
+					message: 'Scan yer finger', // optional
+					fallbackMessage: 'Enter PIN', // optional
+				},
+				true
+			)
 			.then(() => this.set('status', 'Biometric ID OK'))
 			.catch((error) => {
 				this.set('status', 'Biometric ID NOT OK: ' + JSON.stringify(error));
@@ -84,5 +79,30 @@ export class DemoSharedFingerprintAuth extends DemoSharedBase {
 					okButtonText: 'Mmkay',
 				});
 			});
+	}
+
+	doVerifyFingerprintWithEncrypt(): void {
+		this.fingerprintAuth
+			.verifyFingerprint({
+				title: 'Enter your password',
+				message: 'Scan yer finger', // optional
+				android: { pinFallback: true, keyName: 'MySecretKeyName', encryptText: CONFIGURED_PASSWORD },
+			})
+			.then((result) => {
+				this.set('status', 'Biometric ID OK');
+			})
+			.catch((err) => this.set('status', `Biometric ID NOT OK: " + ${JSON.stringify(err)}`));
+	}
+	doVerifyFingerprintWithDecrypt(): void {
+		this.fingerprintAuth
+			.verifyFingerprint({
+				title: 'Enter your password',
+				message: 'Scan yer finger', // optional
+				android: { pinFallback: true },
+			})
+			.then(() => {
+				this.set('status', 'Biometric ID OK');
+			})
+			.catch((err) => this.set('status', `Biometric ID NOT OK: " + ${JSON.stringify(err)}`));
 	}
 }

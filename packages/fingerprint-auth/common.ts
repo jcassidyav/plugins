@@ -118,4 +118,6 @@ export interface FingerprintAuthApi {
 export interface BioMetricResult {
 	code: ERROR_CODES;
 	message: string;
+	encrypted?: string;
+	decrypted?: string;
 }

@@ -1,5 +1,5 @@
 export * from './common';
-import { BiometricIDAvailableResult, FingerprintAuthApi, VerifyFingerprintOptions, VerifyFingerprintWithCustomFallbackOptions } from './common';
+import { BiometricIDAvailableResult, FingerprintAuthApi, VerifyFingerprintOptions, VerifyFingerprintWithCustomFallbackOptions, BioMetricResult } from './common';
 export declare class FingerprintAuth implements FingerprintAuthApi {
 	available(): Promise<BiometricIDAvailableResult>;
 	didFingerprintDatabaseChange(): Promise<boolean>;
@@ -22,3 +22,4 @@ export declare class FingerprintAuth implements FingerprintAuthApi {
 	verifyFingerprintWithCustomFallback(options: VerifyFingerprintWithCustomFallbackOptions, usePasscodeFallback?: boolean): Promise<BioMetricResult>;
 	close(): void;
 }
+export { BioMetricResult };

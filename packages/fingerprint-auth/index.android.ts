@@ -10,6 +10,8 @@ const REQUEST_CODE_CONFIRM_DEVICE_CREDENTIALS = 788; // arbitrary
 const AuthenticationCallback = (<any>androidx.biometric.BiometricPrompt.AuthenticationCallback).extend({
 	resolve: null,
 	reject: null,
+	toEncrypt: null,
+	toDecrypt: null,
 	onAuthenticationError(code: number, error: string) {
 		let returnCode: ERROR_CODES;
 		let message: string;
@@ -44,9 +46,15 @@ const AuthenticationCallback = (<any>androidx.biometric.BiometricPrompt.Authenti
 	},
 	onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult): void {
 		try {
-			if (result.getCryptoObject()) {
+			if (this.toEncrypt) {
+				// Howto do the encrypt/decrypt ?
+				result.getCryptoObject().getCipher().doFinal(SECRET_BYTE_ARRAY);
+			} else if (this.toDecrypt) {
+				result.getCryptoObject().getCipher().doFinal(SECRET_BYTE_ARRAY);
+			} else {
 				result.getCryptoObject().getCipher().doFinal(SECRET_BYTE_ARRAY);
 			}
+
 			this.resolve({
 				code: ERROR_CODES.SUCCESS,
 				message: 'All OK',
@@ -147,10 +155,10 @@ export class FingerprintAuth implements FingerprintAuthApi {
 				let cryptoObject;
 
 				if (!pinFallback) {
-					FingerprintAuth.generateSecretKey(options.android);
+					FingerprintAuth.generateSecretKey(options.android, reject);
 
 					const cipher = this.getCipher();
-					const secretKey = this.getSecretKey();
+					const secretKey = this.getSecretKey(options?.android?.keyName);
 					cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, secretKey);
 
 					cryptoObject = org.nativescript.plugins.fingerprint.Utils.createCryptoObject(cipher);
@@ -207,21 +215,28 @@ export class FingerprintAuth implements FingerprintAuthApi {
 	 * Creates a symmetric key in the Android Key Store which can only be used after the user has
 	 * authenticated with device credentials within the last X seconds.
 	 */
-	private static generateSecretKey(options: AndroidOptions): void {
+	private static generateSecretKey(options: AndroidOptions, reject): void {
 		const keyStore = java.security.KeyStore.getInstance('AndroidKeyStore');
 		keyStore.load(null);
 
-		if (options.keyName && options.decryptText) {
-			const key = keyStore.getKey(KEY_NAME, null);
+		const keyName = options?.keyName ?? KEY_NAME;
+		if (options?.keyName && (options?.decryptText || options?.encryptText)) {
+			const key = keyStore.getKey(keyName, null);
 			if (key) return;
 			// key already exists
 			else {
 				// need to reject as can neve decrypt without a key.
+				if (options.decryptText) {
+					reject({
+						code: ERROR_CODES.UNEXPECTED_ERROR,
+						message: `Key not available: ${keyName}`,
+					});
+				}
 			}
 		}
 
 		const keyGenerator = javax.crypto.KeyGenerator.getInstance(android.security.keystore.KeyProperties.KEY_ALGORITHM_AES, 'AndroidKeyStore');
-		const builder = new android.security.keystore.KeyGenParameterSpec.Builder(KEY_NAME, android.security.keystore.KeyProperties.PURPOSE_ENCRYPT | android.security.keystore.KeyProperties.PURPOSE_DECRYPT).setBlockModes([android.security.keystore.KeyProperties.BLOCK_MODE_CBC]).setEncryptionPaddings([android.security.keystore.KeyProperties.ENCRYPTION_PADDING_PKCS7]).setUserAuthenticationRequired(true);
+		const builder = new android.security.keystore.KeyGenParameterSpec.Builder(keyName, android.security.keystore.KeyProperties.PURPOSE_ENCRYPT | android.security.keystore.KeyProperties.PURPOSE_DECRYPT).setBlockModes([android.security.keystore.KeyProperties.BLOCK_MODE_CBC]).setEncryptionPaddings([android.security.keystore.KeyProperties.ENCRYPTION_PADDING_PKCS7]).setUserAuthenticationRequired(true);
 		if (android.os.Build.VERSION.SDK_INT > 23) {
 			builder.setInvalidatedByBiometricEnrollment(true);
 		}
@@ -254,12 +269,12 @@ export class FingerprintAuth implements FingerprintAuthApi {
 
 		this.showAuthenticationScreen(options);
 	}
-	private getSecretKey() {
+	private getSecretKey(keyName?: string) {
 		const keyStore = java.security.KeyStore.getInstance('AndroidKeyStore');
 
 		// Before the keystore can be accessed, it must be loaded.
 		keyStore.load(null);
-		return keyStore.getKey(KEY_NAME, null);
+		return keyStore.getKey(keyName ?? KEY_NAME, null);
 	}
 
 	private getCipher(): javax.crypto.Cipher {
