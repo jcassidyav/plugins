@@ -12,6 +12,7 @@ const AuthenticationCallback = (<any>androidx.biometric.BiometricPrompt.Authenti
 	reject: null,
 	toEncrypt: null,
 	toDecrypt: null,
+	IV: null,
 	onAuthenticationError(code: number, error: string) {
 		let returnCode: ERROR_CODES;
 		let message: string;
@@ -45,12 +46,23 @@ const AuthenticationCallback = (<any>androidx.biometric.BiometricPrompt.Authenti
 		});
 	},
 	onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult): void {
+		let encrypted: string;
+		let decrypted: string;
+		let iv: string;
 		try {
 			if (this.toEncrypt) {
 				// Howto do the encrypt/decrypt ?
-				result.getCryptoObject().getCipher().doFinal(SECRET_BYTE_ARRAY);
+				const nativeString = new java.lang.String(this.toEncrypt.toString());
+				const nativeBytes = nativeString.getBytes('UTF-8');
+				const cipher = result.getCryptoObject().getCipher();
+				const encryptedArray = cipher.doFinal(nativeBytes);
+				encrypted = android.util.Base64.encodeToString(encryptedArray, android.util.Base64.DEFAULT).toString();
+				iv = android.util.Base64.encodeToString(cipher.getIV(), android.util.Base64.DEFAULT).toString();
 			} else if (this.toDecrypt) {
-				result.getCryptoObject().getCipher().doFinal(SECRET_BYTE_ARRAY);
+				const nativeBytes = android.util.Base64.decode(this.toDecrypt, android.util.Base64.DEFAULT);
+
+				const decryptedBytes = result.getCryptoObject().getCipher().doFinal(nativeBytes);
+				decrypted = new java.lang.String(decryptedBytes, java.nio.charset.StandardCharsets.UTF_8).toString();
 			} else {
 				result.getCryptoObject().getCipher().doFinal(SECRET_BYTE_ARRAY);
 			}
@@ -58,6 +70,9 @@ const AuthenticationCallback = (<any>androidx.biometric.BiometricPrompt.Authenti
 			this.resolve({
 				code: ERROR_CODES.SUCCESS,
 				message: 'All OK',
+				encrypted,
+				decrypted,
+				iv,
 			});
 		} catch (error) {
 			console.log(`Error in onAuthenticationSucceeded: ${error}`);
@@ -159,8 +174,14 @@ export class FingerprintAuth implements FingerprintAuthApi {
 
 					const cipher = this.getCipher();
 					const secretKey = this.getSecretKey(options?.android?.keyName);
-					cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, secretKey);
+					const keyMode = options?.android?.decryptText ? javax.crypto.Cipher.DECRYPT_MODE : javax.crypto.Cipher.ENCRYPT_MODE;
 
+					if (keyMode === javax.crypto.Cipher.DECRYPT_MODE) {
+						const initializationVector = android.util.Base64.decode(options.android.iv, android.util.Base64.DEFAULT);
+						cipher.init(keyMode, secretKey, new javax.crypto.spec.IvParameterSpec(initializationVector));
+					} else {
+						cipher.init(keyMode, secretKey);
+					}
 					cryptoObject = org.nativescript.plugins.fingerprint.Utils.createCryptoObject(cipher);
 				}
 
@@ -168,6 +189,8 @@ export class FingerprintAuth implements FingerprintAuthApi {
 				let authCallback = new AuthenticationCallback();
 				authCallback.resolve = resolve;
 				authCallback.reject = reject;
+				authCallback.toEncrypt = options?.android?.encryptText;
+				authCallback.toDecrypt = options?.android?.decryptText;
 
 				this.biometricPrompt = new androidx.biometric.BiometricPrompt(this.getActivity(), executor, authCallback);
 

@@ -68,6 +68,13 @@ export interface AndroidOptions {
 	 * If set and pinFallback is true, and keyName is set then this string will be decrypted via the Biometric controlled Key.
 	 */
 	decryptText?: string;
+
+	/**
+	 * Required id decryptText is set.
+	 *
+	 * Retrieved from the result of an encryption.
+	 */
+	iv?: string;
 }
 
 export interface BiometricIDAvailableResult {
@@ -120,4 +127,5 @@ export interface BioMetricResult {
 	message: string;
 	encrypted?: string;
 	decrypted?: string;
+	iv?: string;
 }

@@ -6,7 +6,9 @@ const CONFIGURED_PASSWORD = 'MyPassword';
 export class DemoSharedFingerprintAuth extends DemoSharedBase {
 	private fingerprintAuth: FingerprintAuth;
 	status: string = 'Tap a button below..';
-
+	encryptedPassword: string;
+	IV: string;
+	decryptedPassword = CONFIGURED_PASSWORD;
 	constructor() {
 		super();
 		this.fingerprintAuth = new FingerprintAuth();
@@ -86,9 +88,11 @@ export class DemoSharedFingerprintAuth extends DemoSharedBase {
 			.verifyFingerprint({
 				title: 'Enter your password',
 				message: 'Scan yer finger', // optional
-				android: { pinFallback: true, keyName: 'MySecretKeyName', encryptText: CONFIGURED_PASSWORD },
+				android: { pinFallback: false, keyName: 'MySecretKeyName', encryptText: this.decryptedPassword },
 			})
 			.then((result) => {
+				this.encryptedPassword = result.encrypted;
+				this.IV = result.iv;
 				this.set('status', 'Biometric ID OK');
 			})
 			.catch((err) => this.set('status', `Biometric ID NOT OK: " + ${JSON.stringify(err)}`));
@@ -98,10 +102,14 @@ export class DemoSharedFingerprintAuth extends DemoSharedBase {
 			.verifyFingerprint({
 				title: 'Enter your password',
 				message: 'Scan yer finger', // optional
-				android: { pinFallback: true },
+				android: { pinFallback: false, keyName: 'MySecretKeyName', decryptText: this.encryptedPassword, iv: this.IV },
 			})
-			.then(() => {
-				this.set('status', 'Biometric ID OK');
+			.then((result) => {
+				if (result.decrypted === this.decryptedPassword) {
+					this.set('status', 'Biometric ID OK');
+				} else {
+					this.set('status', `Biometric ID NOT OK: ${result.decrypted} is not the PASSWORD`);
+				}
 			})
 			.catch((err) => this.set('status', `Biometric ID NOT OK: " + ${JSON.stringify(err)}`));
 	}

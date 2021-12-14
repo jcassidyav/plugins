@@ -8,6 +8,9 @@
 			<Button text="Test Verify w/ PIN Fallback" (tap)="demoShared.doVerifyFingerprintWithPinFallBack()" class="btn btn-primary"></Button>
 			<Button text="Android Only Encrypt secret" (tap)="demoShared.doVerifyFingerprintWithEncrypt()" class="btn btn-primary"></Button>
 			<Button text="Android Only Decrypt secret" (tap)="demoShared.doVerifyFingerprintWithDecrypt()" class="btn btn-primary"></Button>
+			<TextField [(ngModel)]="demoShared.encryptedPassword"></TextField>
+			<TextField [(ngModel)]="demoShared.IV"></TextField>
+			<TextField [(ngModel)]="demoShared.decryptedPassword"></TextField>
 		</StackLayout>
 	</ScrollView>
 </StackLayout>
