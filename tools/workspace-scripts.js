@@ -274,7 +274,7 @@ module.exports = {
 				},
 			},
 			// @nativescript/contacts
-			'contacts': {
+			contacts: {
 				build: {
 					script: 'nx run contacts:build.all',
 					description: '@nativescript/contacts: Build',
@@ -285,7 +285,14 @@ module.exports = {
 				build: {
 					script: 'nx run ionic-portals:build.all',
 					description: '@nativescript/ionic-portals: Build',
-				}
+				},
+			},
+			// @nativescript/encrypted-storage
+			'encrypted-storage': {
+				build: {
+					script: 'nx run encrypted-storage:build.all',
+					description: '@nativescript/encrypted-storage: Build',
+				},
 			},
 			'build-all': {
 				script: 'nx run all:build',
@@ -417,13 +424,17 @@ module.exports = {
 				script: 'nx run google-maps:focus',
 				description: 'Focus on @nativescript/google-maps',
 			},
-			'contacts': {
+			contacts: {
 				script: 'nx run contacts:focus',
 				description: 'Focus on @nativescript/contacts',
 			},
 			'ionic-portals': {
 				script: 'nx run ionic-portals:focus',
 				description: 'Focus on @nativescript/ionic-portals',
+			},
+			'encrypted-storage': {
+				script: 'nx run encrypted-storage:focus',
+				description: 'Focus on @nativescript/encrypted-storage',
 			},
 			reset: {
 				script: 'nx run all:focus',
