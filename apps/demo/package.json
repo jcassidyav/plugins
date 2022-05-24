@@ -21,6 +21,7 @@
 		"@nativescript/detox": "file:../../packages/detox",
 		"@nativescript/directions": "file:../../packages/directions",
 		"@nativescript/email": "file:../../packages/email",
+		"@nativescript/encrypted-storage": "file:../../packages/encrypted-storage",
 		"@nativescript/facebook": "file:../../packages/facebook",
 		"@nativescript/fingerprint-auth": "file:../../packages/fingerprint-auth",
 		"@nativescript/geolocation": "file:../../packages/geolocation",
