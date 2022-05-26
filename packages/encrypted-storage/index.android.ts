@@ -51,7 +51,6 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 		try {
 			this.createSharedPreferences();
 		} catch {
-			console.log('Cannot Catch Exception');
 			this.deleteSharedPreferences();
 
 			try {
@@ -73,8 +72,6 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 			EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV, // prefKeyEncryptionScheme
 			EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM // prefvalueEncryptionScheme
 		);
-		console.log('Deleting for the crack');
-		this.deleteSharedPreferences();
 	}
 
 	private deleteSharedPreferences() {
@@ -85,7 +82,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 			context.getSharedPreferences(DEFAULT_FILE_NAME, android.content.Context.MODE_PRIVATE).edit().clear().apply();
 
 			const sharedPrefs = knownFolders.currentApp().getFolder('shared_prefs');
-			sharedPrefs.getFile('encrypted_preferences.xml').removeSync();
+			sharedPrefs.getFile(DEFAULT_FILE_NAME).removeSync();
 
 			const keyStore = java.security.KeyStore.getInstance('AndroidKeyStore');
 			keyStore.load(null);
