@@ -1,7 +1,5 @@
 import { GetOptions, RemoveAllOptions, RemoveOptions, EncryptedStorageCommon, SetOptions } from './common';
 
-declare const SAMKeychainQuery, SAMKeychain;
-
 export class EncryptedStorage extends EncryptedStorageCommon {
 	private isSimulator: boolean;
 	private accessibilityType: string;
@@ -33,7 +31,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 		this.accessibilityType = accessibilityType;
 	}
 
-	public get(arg: GetOptions): Promise<any> {
+	public get(arg: GetOptions): Promise<string> {
 		return new Promise((resolve, reject) => {
 			if (this.isSimulator) {
 				resolve(NSUserDefaults.standardUserDefaults.objectForKey(arg.key));
@@ -55,7 +53,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 		});
 	}
 
-	getSync(arg: GetOptions): any {
+	getSync(arg: GetOptions): string {
 		if (this.isSimulator) {
 			return NSUserDefaults.standardUserDefaults.objectForKey(arg.key);
 		}
