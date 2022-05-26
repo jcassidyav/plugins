@@ -2,7 +2,7 @@ import { GetOptions, RemoveAllOptions, RemoveOptions, EncryptedStorageCommon, Se
 
 declare const SAMKeychainQuery, SAMKeychain;
 
-export class SecureStorage extends EncryptedStorageCommon {
+export class EncryptedStorage extends EncryptedStorageCommon {
 	private isSimulator: boolean;
 	private accessibilityType: string;
 
