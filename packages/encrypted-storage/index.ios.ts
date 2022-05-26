@@ -41,7 +41,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 			}
 
 			const query = SAMKeychainQuery.new();
-			query.service = arg.service || SecureStorage.defaultService;
+			query.service = arg.service || EncryptedStorage.defaultService;
 			query.account = arg.key;
 			if (arg.accessGroup) {
 				query.accessGroup = arg.accessGroup;
@@ -61,7 +61,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 		}
 
 		const query = SAMKeychainQuery.new();
-		query.service = arg.service || SecureStorage.defaultService;
+		query.service = arg.service || EncryptedStorage.defaultService;
 		query.account = arg.key;
 		if (arg.accessGroup) {
 			query.accessGroup = arg.accessGroup;
@@ -84,7 +84,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 
 			SAMKeychain.setAccessibilityType(this.accessibilityType);
 			const query = SAMKeychainQuery.new();
-			query.service = arg.service || SecureStorage.defaultService;
+			query.service = arg.service || EncryptedStorage.defaultService;
 			query.account = arg.key;
 			query.password = arg.value;
 			if (arg.accessGroup) {
@@ -102,7 +102,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 
 		SAMKeychain.setAccessibilityType(this.accessibilityType);
 		const query = SAMKeychainQuery.new();
-		query.service = arg.service || SecureStorage.defaultService;
+		query.service = arg.service || EncryptedStorage.defaultService;
 		query.account = arg.key;
 		query.password = arg.value;
 		if (arg.accessGroup) {
@@ -120,7 +120,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 			}
 
 			const query = SAMKeychainQuery.new();
-			query.service = arg.service || SecureStorage.defaultService;
+			query.service = arg.service || EncryptedStorage.defaultService;
 			query.account = arg.key;
 			if (arg.accessGroup) {
 				query.accessGroup = arg.accessGroup;
@@ -140,7 +140,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 		}
 
 		const query = SAMKeychainQuery.new();
-		query.service = arg.service || SecureStorage.defaultService;
+		query.service = arg.service || EncryptedStorage.defaultService;
 		query.account = arg.key;
 		if (arg.accessGroup) {
 			query.accessGroup = arg.accessGroup;
@@ -165,14 +165,14 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 			const allAccounts = SAMKeychain.allAccounts();
 			if (allAccounts) {
 				for (let i = 0; i < allAccounts.count; i++) {
-					const key = allAccounts[i].objectForKey(SecureStorage.kSSKeychainAccountKey_copy);
+					const key = allAccounts[i].objectForKey(EncryptedStorage.kSSKeychainAccountKey_copy);
 					try {
 						const query = SAMKeychainQuery.new();
-						query.service = arg && arg.service ? arg.service : SecureStorage.defaultService;
+						query.service = arg && arg.service ? arg.service : EncryptedStorage.defaultService;
 						query.account = key;
 						query.deleteItem();
 					} catch (e) {
-						console.log('SecureStorage: Could not remove key -> ' + key);
+						console.log('EncryptedStorage: Could not remove key -> ' + key);
 					}
 				}
 			}
@@ -192,14 +192,14 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 		const allAccounts = SAMKeychain.allAccounts();
 		if (allAccounts) {
 			for (let i = 0; i < allAccounts.count; i++) {
-				const key = allAccounts[i].objectForKey(SecureStorage.kSSKeychainAccountKey_copy);
+				const key = allAccounts[i].objectForKey(EncryptedStorage.kSSKeychainAccountKey_copy);
 				try {
 					const query = SAMKeychainQuery.new();
-					query.service = arg && arg.service ? arg.service : SecureStorage.defaultService;
+					query.service = arg && arg.service ? arg.service : EncryptedStorage.defaultService;
 					query.account = key;
 					query.deleteItem();
 				} catch (e) {
-					console.log('SecureStorage: Could not remove key -> ' + key);
+					console.log('EncryptedStorage: Could not remove key -> ' + key);
 				}
 			}
 		}

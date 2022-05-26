@@ -3,6 +3,7 @@
 	"version": "0.0.0",
 	"license": "MIT",
 	"scripts": {
+		"clean": "npx rimraf node_modules package-lock.json dist tmp yarn.lock",
 		"setup": "npx rimraf node_modules package-lock.json dist tmp yarn.lock && yarn config set ignore-engines true && yarn",
 		"start": "nps",
 		"add": "nx g @nativescript/plugin-tools:add-package",

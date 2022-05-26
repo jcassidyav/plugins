@@ -1,5 +1,5 @@
 import { Application, knownFolders } from '@nativescript/core';
-import { GetOptions, SetOptions, RemoveOptions, RemoveAllOptions, EncryptedStorageCommon } from './common';
+import { GetOptions, SetOptions, RemoveOptions, EncryptedStorageCommon } from './common';
 const MasterKeys = androidx.security.crypto.MasterKeys;
 const EncryptedSharedPreferences = androidx.security.crypto.EncryptedSharedPreferences;
 const DEFAULT_FILE_NAME = 'encrypted_preferences';
@@ -10,7 +10,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 		super();
 	}
 
-	get(arg: GetOptions): Promise<any> {
+	get(arg: GetOptions): Promise<string> {
 		return Promise.resolve(this.getSync(arg));
 	}
 	getSync(arg: GetOptions) {
@@ -28,10 +28,10 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 	removeSync(arg: RemoveOptions): boolean {
 		return this.getSharedPreferences().edit().remove(arg.key).commit();
 	}
-	removeAll(arg?: RemoveAllOptions): Promise<boolean> {
-		return Promise.resolve(this.removeAllSync(arg));
+	removeAll(): Promise<boolean> {
+		return Promise.resolve(this.removeAllSync());
 	}
-	removeAllSync(arg?: RemoveAllOptions): boolean {
+	removeAllSync(): boolean {
 		return this.getSharedPreferences().edit().clear().commit();
 	}
 

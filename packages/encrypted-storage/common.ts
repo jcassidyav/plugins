@@ -34,9 +34,9 @@ export abstract class EncryptedStorageCommon {
 		}
 	}
 
-	abstract get(arg: GetOptions): Promise<any>;
+	abstract get(arg: GetOptions): Promise<string>;
 
-	abstract getSync(arg: GetOptions): any;
+	abstract getSync(arg: GetOptions): string;
 
 	abstract set(arg: SetOptions): Promise<boolean>;
 
@@ -55,13 +55,13 @@ export abstract class EncryptedStorageCommon {
 	}
 
 	public isFirstRun(): Promise<boolean> {
-		return new Promise<boolean>((resolve, reject) => {
+		return new Promise<boolean>((resolve) => {
 			resolve(this.isFirstRunSync());
 		});
 	}
 
 	public clearAllOnFirstRun(): Promise<boolean> {
-		return new Promise<boolean>((resolve, reject) => {
+		return new Promise<boolean>((resolve) => {
 			if (this.isFirstRunSync()) {
 				this.removeAll();
 				resolve(true);
