@@ -65,7 +65,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 	private createSharedPreferences() {
 		const context = Application.android.context;
 
-		var masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC);
+		const masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC);
 		this.sharedPreferences = EncryptedSharedPreferences.create(
 			DEFAULT_FILE_NAME, // fileName
 			masterKeyAlias, // masterKeyAlias
@@ -84,12 +84,14 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 
 			context.getSharedPreferences(DEFAULT_FILE_NAME, android.content.Context.MODE_PRIVATE).edit().clear().apply();
 
-			var sharedPrefs = knownFolders.currentApp().getFolder('shared_prefs');
+			const sharedPrefs = knownFolders.currentApp().getFolder('shared_prefs');
 			sharedPrefs.getFile('encrypted_preferences.xml').removeSync();
 
 			const keyStore = java.security.KeyStore.getInstance('AndroidKeyStore');
 			keyStore.load(null);
 			keyStore.deleteEntry(MasterKeys.AES256_GCM_SPEC.getKeystoreAlias());
-		} catch (e) {}
+		} catch (e) {
+			console.log('Error deleting preferences', e);
+		}
 	}
 }
