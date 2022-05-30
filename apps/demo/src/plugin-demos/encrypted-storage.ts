@@ -1,4 +1,4 @@
-import { Observable, EventData, Page } from '@nativescript/core';
+import { EventData, Page } from '@nativescript/core';
 import { DemoSharedEncryptedStorage } from '@demo/shared';
 import {} from '@nativescript/encrypted-storage';
 

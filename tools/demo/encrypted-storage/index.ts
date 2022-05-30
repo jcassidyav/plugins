@@ -8,6 +8,13 @@ export class DemoSharedEncryptedStorage extends DemoSharedBase {
 	constructor() {
 		super();
 		this.secureStorage = new EncryptedStorage();
+		if (this.secureStorage.init()) {
+			console.log('All Good on Initalization');
+			this.set('lastRetrievedValue', 'All Good on Initalization');
+		} else {
+			console.log('No Good on Initalization');
+			this.set('lastRetrievedValue', 'No Good on Initalization');
+		}
 	}
 
 	public doGet() {

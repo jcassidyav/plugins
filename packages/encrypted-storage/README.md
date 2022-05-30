@@ -20,6 +20,17 @@ __PRO TIP:__ Want to store objects instead of strings? Use `JSON.stringify` with
 
 ## API
 
+### `init` 
+
+You must call init before using this library, e.g.
+
+```ts
+const encryptedStorage = new EncryptedStorage();
+if(encryptedStorage.init()) {
+  // Good to use.
+}
+```
+
 ### `set` | `setSync`
 > "In order to GET something you first need to SET it."
 >
@@ -28,47 +39,50 @@ __PRO TIP:__ Want to store objects instead of strings? Use `JSON.stringify` with
 ##### JavaScript
 ```js
 // require the plugin
-var SecureStorage = require("nativescript-secure-storage").SecureStorage;
+var EncryptedStorage = require("@nativescript/encrypted-storage").EncryptedStorage;
 
 // instantiate the plugin
-var secureStorage = new SecureStorage();
+var encryptedStorage = new EncryptedStorage();
+if(encryptedStorage.init()) {
 
-// async
-secureStorage.set({
-  key: "foo",
-  value: "I was set at " + new Date()
-}).then(
-  function(success) {
-    console.log("Successfully set a value? " + success);
-  }
-);
+  // async
+  encryptedStorage.set({
+    key: "foo",
+    value: "I was set at " + new Date()
+  }).then(
+    function(success) {
+      console.log("Successfully set a value? " + success);
+    }
+  );
 
-// sync
-var success = secureStorage.setSync({
-  key: "foo",
-  value: "I was set at " + new Date()
-});
+  // sync
+  var success = encryptedStorage.setSync({
+    key: "foo",
+    value: "I was set at " + new Date()
+  });
+}
 ```
 
 ##### TypeScript
 ```typescript
 // require the plugin
-import { SecureStorage } from "nativescript-secure-storage";
+import { EncryptedStorage } from "@nativescript/encrypted-storage";
 
 // instantiate the plugin
-let secureStorage = new SecureStorage();
+let encryptedStorage = new EncryptedStorage();
+if(encryptedStorage.init()) {
+  // async
+  encryptedStorage.set({
+    key: "foo",
+    value: "I was set at " + new Date()
+  }).then(success => console.log("Successfully set a value? " + success));
 
-// async
-secureStorage.set({
-  key: "foo",
-  value: "I was set at " + new Date()
-}).then(success => console.log("Successfully set a value? " + success));
-
-// sync
-const success = secureStorage.setSync({
-  key: "foo",
-  value: "I was set at " + new Date()
-});
+  // sync
+  const success = encryptedStorage.setSync({
+    key: "foo",
+    value: "I was set at " + new Date()
+  });
+}
 ```
 
 ### `get` | `getSync`
@@ -77,7 +91,7 @@ Will return `null` if not found.
 ##### JavaScript
 ```js
 // async
-secureStorage.get({
+encryptedStorage.get({
   key: "foo"
 }).then(
   function(value) {
@@ -86,7 +100,7 @@ secureStorage.get({
 );
 
 // sync
-var value = secureStorage.getSync({
+var value = encryptedStorage.getSync({
   key: "foo"
 });
 ```
@@ -94,12 +108,12 @@ var value = secureStorage.getSync({
 ##### TypeScript
 ```typescript
 // async
-secureStorage.get({
+encryptedStorage.get({
   key: "foo"
 }).then(value => console.log("Got value: " + value));
 
 // sync
-const value = secureStorage.getSync({
+const value = encryptedStorage.getSync({
   key: "foo"
 });
 ```
@@ -109,7 +123,7 @@ const value = secureStorage.getSync({
 ##### JavaScript
 ```js
 // async
-secureStorage.remove({
+encryptedStorage.remove({
   key: "foo"
 }).then(
   function(success) {
@@ -118,7 +132,7 @@ secureStorage.remove({
 );
 
 // sync
-var success = secureStorage.removeSync({
+var success = encryptedStorage.removeSync({
   key: "foo"
 });
 ```
@@ -126,12 +140,12 @@ var success = secureStorage.removeSync({
 ##### TypeScript
 ```typescript
 // async
-secureStorage.remove({
+encryptedStorage.remove({
   key: "foo"
 }).then(success => console.log("Successfully removed a value? " + success));
 
 // sync
-const success = secureStorage.removeSync({
+const success = encryptedStorage.removeSync({
   key: "foo"
 });
 ```
@@ -141,23 +155,23 @@ const success = secureStorage.removeSync({
 ##### JavaScript
 ```js
 // async
-secureStorage.removeAll().then(
+encryptedStorage.removeAll().then(
   function(success) {
     console.log("Removed value? " + success);
   }
 );
 
 // sync
-var success = secureStorage.removeAllSync();
+var success = encryptedStorage.removeAllSync();
 ```
 
 ##### TypeScript
 ```typescript
 // async
-secureStorage.removeAll().then(success => console.log("Successfully removed a value? " + success));
+encryptedStorage.removeAll().then(success => console.log("Successfully removed a value? " + success));
 
 // sync
-const success = secureStorage.removeAllSync();
+const success = encryptedStorage.removeAllSync();
 ```
 
 ### `clearAllOnFirstRun` | `clearAllOnFirstRunSync`
@@ -172,25 +186,25 @@ methods before using other methods this plugin provides.
 ##### JavaScript
 ```js
 // async
-secureStorage.clearAllOnFirstRun().then(
+encryptedStorage.clearAllOnFirstRun().then(
   function(success) {
       console.log(success ? "Successfully removed all data on the first run" : "Data not removed because this is not the first run");
   }
 );
 
 // sync
-var success = secureStorage.clearAllOnFirstRunSync();
+var success = encryptedStorage.clearAllOnFirstRunSync();
 ```
 
 ##### TypeScript
 ```typescript
 // async
-secureStorage.clearAllOnFirstRun().then(success => {
+encryptedStorage.clearAllOnFirstRun().then(success => {
     console.log(success ? "Successfully removed all data on the first run" : "Data not removed because this is not the first run");
 });
 
 // sync
-const success = secureStorage.clearAllOnFirstRunSync();
+const success = encryptedStorage.clearAllOnFirstRunSync();
 ```
 
 ### `isFirstRun` | `isFirstRunSync`
@@ -200,12 +214,12 @@ this is the first run (after an install or install-delete-reinstall).
 ##### TypeScript
 ```typescript
 // sync
-if (secureStorage.isFirstRunSync()) {
+if (encryptedStorage.isFirstRunSync()) {
   // do whatever you want
 }
 
 // async
-secureStorage.isFirstRun().then(isFirst => {
+encryptedStorage.isFirstRun().then(isFirst => {
   // if isFirst is true, do whatever you like
 });
 ```
@@ -221,14 +235,17 @@ In your view:
 In your `@Component`:
 
 ```typescript
-import { SecureStorage } from "nativescript-secure-storage";
+import { EncryptedStorage } from "@nativescript/encrypted-storage";
 
 export class MyComponent {
-  secureStorage = new SecureStorage();
+  encryptedStorage = new EncryptedStorage();
 
+  constructor(){
+    this.encryptedStorage.init();
+  }
   // a method that can be called from your view
   setSecureValue() {
-    this.secureStorage.set({
+    this.encryptedStorage.set({
       key: 'myKey',
       value: 'my value'
     }).then(success => { console.log(success)});
@@ -236,15 +253,17 @@ export class MyComponent {
 }
 ```
 ## iOS Security++
-By default the plugin uses `kSecAttrAccessibleAlwaysThisDeviceOnly` access control to the keychain. This means that the keychain value can be accessed even if the device is locked. If you want to enhance security and you do not need background access, or if you want to allow the value to be backed up and migrated to another device, you can use any of keys defined [here](https://developer.apple.com/documentation/security/ksecattraccessiblealwaysthisdeviceonly?language=objc#see-also) and pass it when you create an instance of `SecureStorage`, for example
+By default the plugin uses `kSecAttrAccessibleAlwaysThisDeviceOnly` access control to the keychain. This means that the keychain value can be accessed even if the device is locked. If you want to enhance security and you do not need background access, or if you want to allow the value to be backed up and migrated to another device, you can use any of keys defined [here](https://developer.apple.com/documentation/security/ksecattraccessiblealwaysthisdeviceonly?language=objc#see-also) and pass it when you create an instance of `EncryptedStorage`, for example
 ```ts
 declare const kSecAttrAccessibleWhenUnlockedThisDeviceOnly; // This is needed in case you don't have tns-platform-declarations module installed. 
-const secureStorage = new SecureStorage(kSecAttrAccessibleWhenUnlockedThisDeviceOnly);
+const encryptedStorage = new EncryptedStorage();
+this.secureStorage.init({ios:{ accessibilityType: kSecAttrAccessibleWhenUnlockedThisDeviceOnly }});
+
 ```
 
 ## iOS Simulator
 
-Currently this plugin defaults to using `NSUserDefaults` on **iOS Simulators**. You can change this behaviour by providing `disableFallbackToUserDefaults` to the constructor of `SecureStorage`. This then uses the keychain instead of `NSUserDefaults` on simulators.
+Currently this plugin defaults to using `NSUserDefaults` on **iOS Simulators**. You can change this behaviour by providing `disableFallbackToUserDefaults` to the constructor of `EncryptedStorage`. This then uses the keychain instead of `NSUserDefaults` on simulators.
 
 If you're running into issues similar to [issue_10](https://github.com/EddyVerbruggen/nativescript-secure-storage/issues/10), consider using the default behaviour again.
 
@@ -268,14 +287,17 @@ To setup:
   e.g. 
   
   ```typescript
-  import { SecureStorage } from "nativescript-secure-storage";
+  import { EncryptedStorage } from "@nativescript/encrypted-storage";
 
   export class MyComponent {
-    secureStorage = new SecureStorage();
+    encryptedStorage = new EncryptedStorage();
 
+    constructor(){
+      this.encryptedStorage.init();
+    }
     // a method that can be called from your view
     setSecureValue() {
-      this.secureStorage.set({
+      this.encryptedStorage.set({
         accessGroup:"<TeamID>.com.my.app.sharedgroup",
         key: 'myKey',
         value: 'my value'

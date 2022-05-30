@@ -22,6 +22,32 @@ export interface RemoveOptions {
 export interface RemoveAllOptions {
 	service?: string;
 }
+/**
+ * Options for the constuction of EncryptedStorage
+ */
+export interface CreationOptions {
+	android?: AndroidCreationOptions;
+	ios?: IOSCreationOptions;
+}
+/**
+ * IOS options for the constuction of EncryptedStorage
+ */
+export interface IOSCreationOptions {
+	// defaults to kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+	accessibilityType?: string;
+	//
+	disableFallbackToUserDefaults?: boolean;
+}
+
+/**
+ * Android options for the constuction of EncryptedStorage
+ */
+export interface AndroidCreationOptions {
+	// The name of the shared prefferences file
+	fileName?: string;
+	// If an error occurs accessing the EncryptedShared Preferences delete the Preferences.
+	deleteOnError?: boolean;
+}
 
 export abstract class EncryptedStorageCommon {
 	protected static IS_FIRST_RUN = '__IS_FIRST_RUN__';
@@ -33,6 +59,13 @@ export abstract class EncryptedStorageCommon {
 			ApplicationSettings.setBoolean(EncryptedStorageCommon.IS_FIRST_RUN, false);
 		}
 	}
+
+	/**
+	 * Initialize the encrypted storage.
+	 * @param options creation options for IOS/Android.
+	 * @returns true if successfully initalized.
+	 */
+	abstract init(options?: CreationOptions): boolean;
 
 	abstract get(arg: GetOptions): Promise<string>;
 

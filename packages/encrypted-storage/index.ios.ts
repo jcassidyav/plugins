@@ -1,4 +1,4 @@
-import { GetOptions, RemoveAllOptions, RemoveOptions, EncryptedStorageCommon, SetOptions } from './common';
+import { GetOptions, RemoveAllOptions, RemoveOptions, EncryptedStorageCommon, SetOptions, CreationOptions } from './common';
 
 export class EncryptedStorage extends EncryptedStorageCommon {
 	private isSimulator: boolean;
@@ -9,10 +9,12 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 	// This is a copy of 'kSSKeychainAccountKey_copy' which is not exposed from SSKeychain.h by {N}
 	private static kSSKeychainAccountKey_copy = 'acct';
 
-	constructor(accessibilityType: string = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly, disableFallbackToUserDefaults = false) {
+	constructor() {
 		super();
+	}
 
-		if (disableFallbackToUserDefaults) {
+	init(options?: CreationOptions): boolean {
+		if (options?.ios?.disableFallbackToUserDefaults) {
 			this.isSimulator = false;
 		} else {
 			const isMinIOS9 = NSProcessInfo.processInfo.isOperatingSystemAtLeastVersion({
@@ -28,11 +30,12 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 			}
 		}
 
-		this.accessibilityType = accessibilityType;
+		this.accessibilityType = options?.ios?.accessibilityType ?? kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly;
+		return true;
 	}
 
 	public get(arg: GetOptions): Promise<string> {
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			if (this.isSimulator) {
 				resolve(NSUserDefaults.standardUserDefaults.objectForKey(arg.key));
 				return;
@@ -73,7 +76,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 	}
 
 	public set(arg: SetOptions): Promise<boolean> {
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			if (this.isSimulator) {
 				NSUserDefaults.standardUserDefaults.setObjectForKey(arg.value, arg.key);
 				resolve(true);
@@ -110,7 +113,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 	}
 
 	public remove(arg: RemoveOptions): Promise<boolean> {
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			if (this.isSimulator) {
 				NSUserDefaults.standardUserDefaults.removeObjectForKey(arg.key);
 				resolve(true);
@@ -151,7 +154,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 	}
 
 	public removeAll(arg?: RemoveAllOptions): Promise<boolean> {
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			if (this.isSimulator) {
 				const defaults = NSUserDefaults.standardUserDefaults;
 				const bundleId = NSBundle.mainBundle.bundleIdentifier;

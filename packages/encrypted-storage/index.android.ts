@@ -1,5 +1,5 @@
-import { Application, knownFolders } from '@nativescript/core';
-import { GetOptions, SetOptions, RemoveOptions, EncryptedStorageCommon } from './common';
+import { Application, knownFolders, Utils } from '@nativescript/core';
+import { GetOptions, SetOptions, RemoveOptions, EncryptedStorageCommon, CreationOptions } from './common';
 const MasterKeys = androidx.security.crypto.MasterKeys;
 const EncryptedSharedPreferences = androidx.security.crypto.EncryptedSharedPreferences;
 const DEFAULT_FILE_NAME = 'encrypted_preferences';
@@ -10,63 +10,60 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 		super();
 	}
 
+	init(options?: CreationOptions): boolean {
+		this.sharedPreferences = this.createSharedPreferencesRetry(options);
+		return this.sharedPreferences != null;
+	}
+
 	get(arg: GetOptions): Promise<string> {
 		return Promise.resolve(this.getSync(arg));
 	}
 	getSync(arg: GetOptions) {
-		return this.getSharedPreferences().getString(arg.key, null);
+		return this.sharedPreferences.getString(arg.key, null);
 	}
 	set(arg: SetOptions): Promise<boolean> {
 		return Promise.resolve(this.setSync(arg));
 	}
 	setSync(arg: SetOptions): boolean {
-		return this.getSharedPreferences().edit().putString(arg.key, arg.value).commit();
+		return this.sharedPreferences.edit().putString(arg.key, arg.value).commit();
 	}
 	remove(arg: RemoveOptions): Promise<boolean> {
 		return Promise.resolve(this.removeSync(arg));
 	}
 	removeSync(arg: RemoveOptions): boolean {
-		return this.getSharedPreferences().edit().remove(arg.key).commit();
+		return this.sharedPreferences.edit().remove(arg.key).commit();
 	}
 	removeAll(): Promise<boolean> {
 		return Promise.resolve(this.removeAllSync());
 	}
 	removeAllSync(): boolean {
-		return this.getSharedPreferences().edit().clear().commit();
+		return this.sharedPreferences.edit().clear().commit();
 	}
 
-	private getSharedPreferences() {
-		if (this.sharedPreferences == null) {
-			// try to create shared preferences
-			this.createSharedPreferencesRetry();
-		}
-
-		if (this.sharedPreferences == null) {
-			// dead at this point throw an error.
-		}
-		return this.sharedPreferences;
-	}
-
-	private createSharedPreferencesRetry() {
+	private createSharedPreferencesRetry(options?: CreationOptions): android.content.SharedPreferences {
 		try {
-			this.createSharedPreferences();
+			throw new Error();
+			return this.createSharedPreferences(options?.android?.fileName);
 		} catch {
-			this.deleteSharedPreferences();
+			if (options?.android?.deleteOnError !== false) {
+				this.deleteSharedPreferences();
 
-			try {
-				this.createSharedPreferences();
-			} catch {
-				console.log('Cannot initiate storage');
+				try {
+					return this.createSharedPreferences();
+				} catch {
+					console.log('Cannot initiate storage');
+				}
 			}
 		}
+		return null;
 	}
 
-	private createSharedPreferences() {
-		const context = Application.android.context;
+	private createSharedPreferences(filename = DEFAULT_FILE_NAME) {
+		const context = Utils.android.getApplicationContext();
 
 		const masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC);
-		this.sharedPreferences = EncryptedSharedPreferences.create(
-			DEFAULT_FILE_NAME, // fileName
+		return EncryptedSharedPreferences.create(
+			filename, // fileName
 			masterKeyAlias, // masterKeyAlias
 			context, // context
 			EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV, // prefKeyEncryptionScheme
