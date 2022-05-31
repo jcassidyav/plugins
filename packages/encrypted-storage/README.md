@@ -16,7 +16,7 @@ This is a fork of the [@Nativescript/secure-storage](https://github.com/EddyVerb
 
 These APIs are designed to set/retrieve strings so:
 
-__PRO TIP:__ Want to store objects instead of strings? Use `JSON.stringify` with `set` and `JSON.parse` with `get`.
+__PRO TIP:__ If you want to store objects instead of strings? Use `JSON.stringify` with `set` and `JSON.parse` with `get`.
 
 ## API
 
@@ -257,13 +257,21 @@ By default the plugin uses `kSecAttrAccessibleAlwaysThisDeviceOnly` access contr
 ```ts
 declare const kSecAttrAccessibleWhenUnlockedThisDeviceOnly; // This is needed in case you don't have tns-platform-declarations module installed. 
 const encryptedStorage = new EncryptedStorage();
-this.secureStorage.init({ios:{ accessibilityType: kSecAttrAccessibleWhenUnlockedThisDeviceOnly }});
+this.encryptedStorage.init({ios:{ accessibilityType: kSecAttrAccessibleWhenUnlockedThisDeviceOnly }});
 
 ```
 
 ## iOS Simulator
 
-Currently this plugin defaults to using `NSUserDefaults` on **iOS Simulators**. You can change this behaviour by providing `disableFallbackToUserDefaults` to the constructor of `EncryptedStorage`. This then uses the keychain instead of `NSUserDefaults` on simulators.
+Currently this plugin defaults to using `NSUserDefaults` on **iOS Simulators**. You can change this behaviour by providing `disableFallbackToUserDefaults` to the init method of `EncryptedStorage`. This then uses the keychain instead of `NSUserDefaults` on simulators.
+
+```ts
+declare const kSecAttrAccessibleWhenUnlockedThisDeviceOnly; // This is needed in case you don't have tns-platform-declarations module installed. 
+const encryptedStorage = new EncryptedStorage();
+this.encryptedStorage.init({ios:{ disableFallbackToUserDefaults: true }});
+
+```
+
 
 If you're running into issues similar to [issue_10](https://github.com/EddyVerbruggen/nativescript-secure-storage/issues/10), consider using the default behaviour again.
 
