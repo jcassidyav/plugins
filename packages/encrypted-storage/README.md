@@ -14,6 +14,8 @@ ns plugin add @nativescript/encrypted-storage
 
 This is a fork of the [@Nativescript/secure-storage](https://github.com/EddyVerbruggen/nativescript-secure-storage) updated to use [EncryptedSharedPrefereces](https://developer.android.com/reference/androidx/security/crypto/EncryptedSharedPreferences).
 
+__NOTE:__ Data stored by `@Nativescript/secure-storage` in android is not retrievable with this plugin.
+
 These APIs are designed to set/retrieve strings so:
 
 __PRO TIP:__ If you want to store objects instead of strings? Use `JSON.stringify` with `set` and `JSON.parse` with `get`.
