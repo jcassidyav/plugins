@@ -31,6 +31,8 @@ if(encryptedStorage.init()) {
 }
 ```
 
+__ANDROID:__ If init is not called or is unsuccessful read methods will return null, set methods false.
+
 ### `set` | `setSync`
 > "In order to GET something you first need to SET it."
 >

@@ -19,30 +19,41 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 		return Promise.resolve(this.getSync(arg));
 	}
 	getSync(arg: GetOptions) {
-		return this.sharedPreferences.getString(arg.key, null);
+		return this.sharedPreferences?.getString(arg.key, null);
 	}
 	set(arg: SetOptions): Promise<boolean> {
 		return Promise.resolve(this.setSync(arg));
 	}
 	setSync(arg: SetOptions): boolean {
-		return this.sharedPreferences.edit().putString(arg.key, arg.value).commit();
+		if (this.sharedPreferences) {
+			return this.sharedPreferences?.edit().putString(arg.key, arg.value).commit();
+		} else {
+			return false;
+		}
 	}
 	remove(arg: RemoveOptions): Promise<boolean> {
 		return Promise.resolve(this.removeSync(arg));
 	}
 	removeSync(arg: RemoveOptions): boolean {
-		return this.sharedPreferences.edit().remove(arg.key).commit();
+		if (this.sharedPreferences) {
+			return this.sharedPreferences.edit().remove(arg.key).commit();
+		} else {
+			return false;
+		}
 	}
 	removeAll(): Promise<boolean> {
 		return Promise.resolve(this.removeAllSync());
 	}
 	removeAllSync(): boolean {
-		return this.sharedPreferences.edit().clear().commit();
+		if (this.sharedPreferences) {
+			return this.sharedPreferences.edit().clear().commit();
+		} else {
+			return false;
+		}
 	}
 
 	private createSharedPreferencesRetry(options?: CreationOptions): android.content.SharedPreferences {
 		try {
-			throw new Error();
 			return this.createSharedPreferences(options?.android?.fileName);
 		} catch {
 			if (options?.android?.deleteOnError !== false) {
