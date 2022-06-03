@@ -20,6 +20,8 @@ These APIs are designed to set/retrieve strings so:
 
 __PRO TIP:__ If you want to store objects instead of strings? Use `JSON.stringify` with `set` and `JSON.parse` with `get`.
 
+Android API 24+
+
 ## API
 
 ### `init` 
@@ -321,7 +323,7 @@ To setup:
 ## Credits
 * This builds upon   [@Nativescript/secure-storage](https://github.com/EddyVerbruggen/nativescript-secure-storage) by Eddy Verbruggen. The original license is viewable [here](licenses/nativescript-secure-storage)
 * On __iOS__ we're leveraging the KeyChain using the [SAMKeychain](https://github.com/soffes/SAMKeychain) library (on the Simulator `NSUserDefaults`),
-* On __Android__ we're using [androidx.security:security-crypto](https://developer.android.com/jetpack/androidx/releases/security) library which internally uses [Facebook conceal](https://github.com/facebook/conceal).
+* On __Android__ we're using [androidx.security:security-crypto](https://developer.android.com/jetpack/androidx/releases/security).
 * Thanks, [Prabu Devarrajan](https://github.com/prabudevarrajan) for [adding the `deleteAll` function](https://github.com/EddyVerbruggen/nativescript-secure-storage/pull/11)!
 
 ## License

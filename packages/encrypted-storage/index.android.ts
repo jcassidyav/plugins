@@ -1,4 +1,4 @@
-import { Application, knownFolders, Utils } from '@nativescript/core';
+import { Utils } from '@nativescript/core';
 import { GetOptions, SetOptions, RemoveOptions, EncryptedStorageCommon, CreationOptions } from './common';
 const MasterKeys = androidx.security.crypto.MasterKeys;
 const EncryptedSharedPreferences = androidx.security.crypto.EncryptedSharedPreferences;
@@ -57,7 +57,7 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 			return this.createSharedPreferences(options?.android?.fileName);
 		} catch {
 			if (options?.android?.deleteOnError !== false) {
-				this.deleteSharedPreferences();
+				this.deleteSharedPreferences(options?.android?.fileName);
 
 				try {
 					return this.createSharedPreferences();
@@ -82,15 +82,13 @@ export class EncryptedStorage extends EncryptedStorageCommon {
 		);
 	}
 
-	private deleteSharedPreferences() {
+	private deleteSharedPreferences(filename = DEFAULT_FILE_NAME) {
 		try {
-			const context = Application.android.context;
-			console.log('deleting preferences');
+			const context = Utils.android.getApplicationContext();
 
-			context.getSharedPreferences(DEFAULT_FILE_NAME, android.content.Context.MODE_PRIVATE).edit().clear().apply();
+			context.getSharedPreferences(filename, android.content.Context.MODE_PRIVATE).edit().clear().commit();
 
-			const sharedPrefs = knownFolders.currentApp().getFolder('shared_prefs');
-			sharedPrefs.getFile(DEFAULT_FILE_NAME).removeSync();
+			context.deleteSharedPreferences(filename);
 
 			const keyStore = java.security.KeyStore.getInstance('AndroidKeyStore');
 			keyStore.load(null);
