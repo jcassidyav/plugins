@@ -192,6 +192,10 @@ export interface ICameraUpdate {}
 export class CameraUpdate implements ICameraUpdate {
 	static fromCoordinate(coordinate: Coordinate, zoom: number): CameraUpdate;
 
+	static fromCoordinates(coordinates: Coordinate[], padding: number): CameraUpdate;
+
+	static fromCoordinates(coordinates: Coordinate[], width: number, height: number, padding: number): CameraUpdate;
+
 	static fromCameraPosition(position: CameraPosition): CameraUpdate;
 
 	static zoomIn(): CameraUpdate;
@@ -372,7 +376,7 @@ export interface IGoogleMap {
 
 	cameraPosition: CameraPosition;
 
-	mapStyle: Style;
+	mapStyle: Style[];
 
 	snapshot(): Promise<ImageSource>;
 
@@ -618,12 +622,16 @@ export interface ITileOverlay {
 	zIndex: number;
 }
 
+export class Tile {
+	static fromImageSource(source: ImageSource): Tile | null;
+}
+
 export interface ITileProvider {}
 
 export class TileProvider implements ITileProvider {
-	constructor(size?: number);
+	constructor(callback: (x: number, y: number, zoom: number) => Tile);
 }
 
 export class UrlTileProvider extends TileProvider {
-	constructor(size?: number);
+	constructor(callback: (x: number, y: number, zoom: number) => string, size?: number);
 }

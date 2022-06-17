@@ -24,6 +24,25 @@ export class CameraUpdate implements ICameraUpdate {
 		}
 	}
 
+	static fromCoordinates(coordinates: Coordinate[], padding: number);
+	static fromCoordinates(coordinates: Coordinate[], width: number, height?: number, padding?: number) {
+		if (!Array.isArray(coordinates)) {
+			return null;
+		}
+		const bounds = GMSCoordinateBounds.new();
+		coordinates.forEach((coord) => {
+			bounds.includingCoordinate(CLLocationCoordinate2DMake(coord.lat, coord.lng));
+		});
+
+		if (arguments.length == 2) {
+			return CameraUpdate.fromNative(GMSCameraUpdate.fitBoundsWithPadding(bounds, width));
+		} else {
+			/// top, left, bottom, right
+			const insets = UIEdgeInsetsFromString(`${padding},${padding},${height - padding},${width - padding}`);
+			return CameraUpdate.fromNative(GMSCameraUpdate.fitBoundsWithEdgeInsets(bounds, insets));
+		}
+	}
+
 	static fromCameraPosition(position: CameraPosition) {
 		return CameraUpdate.fromNative(GMSCameraUpdate.setCamera(position.native));
 	}
@@ -624,7 +643,7 @@ export class IndoorBuilding implements IIndoorBuilding {
 	get levels(): IndoorLevel[] {
 		const result: IndoorLevel[] = [];
 		const levels = this.native.levels;
-		const count = levels.count;
+		const count = levels?.count || 0;
 		for (let i = 0; i < count; i++) {
 			result.push(IndoorLevel.fromNative(levels.objectAtIndex(i)));
 		}
@@ -801,13 +820,14 @@ export class GoogleMap implements IGoogleMap {
 		return UISettings.fromNative(this.native.settings);
 	}
 
-	#mapStyle: Style;
+	#mapStyle: Style[];
 	get mapStyle() {
 		return this.#mapStyle;
 	}
 
 	set mapStyle(value) {
 		try {
+			this.#mapStyle = value;
 			const style = JSON.stringify(value);
 			this.native.mapStyle = GMSMapStyle.styleWithJSONStringError(style);
 		} catch (e) {
@@ -1168,10 +1188,11 @@ export class Polygon extends OverLayBase implements IPolygon {
 	}
 
 	get points(): Coordinate[] {
-		const count = this.native.path.count();
+		const path = this.native.path;
+		const count = path?.count?.() || 0;
 		const points: Coordinate[] = [];
 		for (let i = 0; i < count; i++) {
-			const point = this.native.path.coordinateAtIndex(i);
+			const point = path.coordinateAtIndex(i);
 			points.push({
 				lat: point.latitude,
 				lng: point.longitude,
@@ -1192,10 +1213,11 @@ export class Polygon extends OverLayBase implements IPolygon {
 	}
 
 	get holes(): Coordinate[] {
-		const count = this.native.holes.count;
+		const nativeHoles = this.native?.holes;
+		const count = nativeHoles?.count || 0;
 		const holes: Coordinate[] = [];
 		for (let i = 0; i < count; i++) {
-			const hole = this.native.holes.objectAtIndex(i);
+			const hole = nativeHoles.objectAtIndex(i);
 			const coord = hole.coordinateAtIndex(0);
 			holes.push({
 				lat: coord.latitude,
@@ -1309,10 +1331,11 @@ export class Polyline extends OverLayBase implements IPolyline {
 	}
 
 	get points(): Coordinate[] {
-		const count = this.native.path.count();
+		const path = this.native.path;
+		const count = path?.count?.() || 0;
 		const points: Coordinate[] = [];
 		for (let i = 0; i < count; i++) {
-			const point = this.native.path.coordinateAtIndex(i);
+			const point = path.coordinateAtIndex(i);
 			points.push({
 				lat: point.latitude,
 				lng: point.longitude,
@@ -1585,6 +1608,10 @@ export class Tile {
 			return tileTile;
 		}
 		return null;
+	}
+
+	static fromImageSource(source: ImageSource): Tile | null {
+		return Tile.fromNative(source?.ios);
 	}
 
 	get native() {

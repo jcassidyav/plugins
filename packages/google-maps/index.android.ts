@@ -747,12 +747,13 @@ export class GoogleMap implements IGoogleMap {
 		return Projection.fromNative(this.native.getProjection());
 	}
 
-	#mapStyle: Style;
+	#mapStyle: Style[];
 	get mapStyle() {
 		return this.#mapStyle;
 	}
 
 	set mapStyle(value) {
+		this.#mapStyle = value;
 		try {
 			const style = new com.google.android.gms.maps.model.MapStyleOptions(JSON.stringify(value));
 			this.native.setMapStyle(style);
@@ -851,6 +852,23 @@ export class CameraUpdate implements ICameraUpdate {
 			return CameraUpdate.fromNative(com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(new com.google.android.gms.maps.model.LatLng(coordinate.lat, coordinate.lng), zoom));
 		} else {
 			return CameraUpdate.fromNative(com.google.android.gms.maps.CameraUpdateFactory.newLatLng(new com.google.android.gms.maps.model.LatLng(coordinate.lat, coordinate.lng)));
+		}
+	}
+
+	static fromCoordinates(coordinates: Coordinate[], padding: number);
+	static fromCoordinates(coordinates: Coordinate[], width: number, height?: number, padding?: number) {
+		if (!Array.isArray(coordinates)) {
+			return null;
+		}
+		const bounds = new com.google.android.gms.maps.model.LatLngBounds.Builder();
+		coordinates.forEach((coord) => {
+			bounds.include(new com.google.android.gms.maps.model.LatLng(coord.lat, coord.lng));
+		});
+
+		if (arguments.length == 2) {
+			return CameraUpdate.fromNative(com.google.android.gms.maps.CameraUpdateFactory.newLatLngBounds(bounds.build(), width));
+		} else {
+			return CameraUpdate.fromNative(com.google.android.gms.maps.CameraUpdateFactory.newLatLngBounds(bounds.build(), width, height, padding));
 		}
 	}
 
@@ -1726,6 +1744,13 @@ export class Tile {
 			const tileTile = new Tile();
 			tileTile.#native = nativeTile;
 			return tileTile;
+		}
+		return null;
+	}
+
+	static fromImageSource(source: ImageSource): Tile | null {
+		if (source instanceof ImageSource && source.android) {
+			return Tile.fromNative((org as any).nativescript.plugins.google_maps.GoogleMaps.bitmapToTile(source.android));
 		}
 		return null;
 	}
