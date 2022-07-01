@@ -5,7 +5,7 @@ export * from './ui';
 export * from './utils';
 
 let DialogListener: any;
-let AppCompatNamespace: any;
+let AppCompatNamespace: typeof androidx.appcompat | typeof android.support.v7;
 declare let global: any;
 
 function initializeAppCompatNamespace(): void {
