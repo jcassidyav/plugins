@@ -6,7 +6,7 @@ export * from './common';
 
 class UriHelper {
 	public static _calculateFileUri(uri: android.net.Uri) {
-		let DocumentsContract = (<any>android.provider).DocumentsContract;
+		let DocumentsContract = android.provider.DocumentsContract;
 		let isKitKat = android.os.Build.VERSION.SDK_INT >= 19; // android.os.Build.VERSION_CODES.KITKAT
 
 		if (isKitKat && DocumentsContract.isDocumentUri(Application.android.context, uri)) {
@@ -23,7 +23,7 @@ class UriHelper {
 					return android.os.Environment.getExternalStorageDirectory() + '/' + id;
 				} else {
 					if (android.os.Build.VERSION.SDK_INT > 23) {
-						(this.getContentResolver() as any).takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION | android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+						this.getContentResolver().takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION | android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
 						const externalMediaDirs = Application.android.context.getExternalMediaDirs();
 						if (externalMediaDirs.length > 1) {
 							let filePath = externalMediaDirs[1].getAbsolutePath();
@@ -171,8 +171,8 @@ export class ImagePicker {
 	}
 
 	authorize(): Promise<void> {
-		if ((<any>android).os.Build.VERSION.SDK_INT >= 23) {
-			return permissions.requestPermission([(<any>android).Manifest.permission.READ_EXTERNAL_STORAGE]);
+		if (android.os.Build.VERSION.SDK_INT >= 23) {
+			return permissions.requestPermission([android.Manifest.permission.READ_EXTERNAL_STORAGE]);
 		} else {
 			return Promise.resolve();
 		}
@@ -195,7 +195,7 @@ export class ImagePicker {
 						try {
 							let results = [];
 							let clip = data.getClipData();
-							const useHelper = (<any>android).os.Build.VERSION.SDK_INT <= 28;
+							const useHelper = android.os.Build.VERSION.SDK_INT <= 28;
 							if (clip) {
 								let count = clip.getItemCount();
 								for (let i = 0; i < count; i++) {
@@ -237,7 +237,7 @@ export class ImagePicker {
 			intent.setType(this.mediaType);
 
 			// not in platform-declaration typings
-			intent.putExtra((android.content.Intent as any).EXTRA_MIME_TYPES, this.mimeTypes);
+			intent.putExtra(android.content.Intent.EXTRA_MIME_TYPES, this.mimeTypes);
 
 			// TODO: Use (<any>android).content.Intent.EXTRA_ALLOW_MULTIPLE
 			if (this.mode === 'multiple') {

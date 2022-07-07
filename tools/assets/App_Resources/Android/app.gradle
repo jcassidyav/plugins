@@ -10,7 +10,7 @@ android {
   compileSdkVersion 32
   buildToolsVersion "32.0.0"
   defaultConfig {  
-    minSdkVersion 24
+    minSdkVersion 18
     targetSdkVersion 32
     generatedDensities = []
   }  

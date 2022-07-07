@@ -5,17 +5,16 @@ export * from './ui';
 export * from './utils';
 
 let DialogListener: any;
-let AppCompatNamespace: any;
-declare let global: any;
+let AppCompatNamespace: typeof androidx.appcompat | typeof android.support.v7;
 
 function initializeAppCompatNamespace(): void {
 	if (AppCompatNamespace) {
 		return;
 	}
-	if (global.androidx && global.androidx.appcompat) {
-		AppCompatNamespace = global.androidx.appcompat;
+	if (androidx && androidx.appcompat) {
+		AppCompatNamespace = androidx.appcompat;
 	} else {
-		AppCompatNamespace = (<any>android.support).v7;
+		AppCompatNamespace = android.support.v7;
 	}
 }
 
