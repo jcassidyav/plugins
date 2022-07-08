@@ -1,0 +1,3 @@
+{
+	"uses": ["android.content:Context", "android.content:SharedPreferences", "android.content:SharedPreferences.Editor", "android.security.keystore:KeyGenParameterSpec", "androidNative:Array", "androidx.security.crypto:EncryptedSharedPreferences", "androidx.security.crypto:EncryptedSharedPreferences.PrefKeyEncryptionScheme", "androidx.security.crypto:EncryptedSharedPreferences.PrefValueEncryptionScheme", "androidx.security.crypto:MasterKeys", "java.io:InputStream", "java.lang:Object", "java.security:KeyStore", "java.security:KeyStore.LoadStoreParameter", "java.security:Provider"]
+}
