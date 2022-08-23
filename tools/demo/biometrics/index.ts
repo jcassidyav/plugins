@@ -45,6 +45,17 @@ export class DemoSharedBiometrics extends DemoSharedBase {
 		});
 	}
 
+	doCheckFingerprintsChangeddecrypt(): void {
+		this.fingerprintAuth
+			.didBiometricDatabaseChange({
+				keyName: 'MySecretKeyName',
+				android: { decryptText: this.encryptedPassword, iv: this.IV },
+			})
+			.then((changed: boolean) => {
+				this.set('status', 'Biometric ID changed? - ' + (changed ? 'YES' : 'NO'));
+			});
+	}
+
 	doVerifyFingerprint(): void {
 		this.fingerprintAuth
 			.verifyBiometric({
