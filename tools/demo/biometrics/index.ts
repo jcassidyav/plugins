@@ -14,6 +14,10 @@ export class DemoSharedBiometrics extends DemoSharedBase {
 		this.fingerprintAuth = new BiometricAuth();
 	}
 
+	doDeleteKey(): void {
+		this.fingerprintAuth.deleteKey('MySecretKeyName');
+	}
+
 	doCheckAvailable(): void {
 		this.fingerprintAuth
 			.available()

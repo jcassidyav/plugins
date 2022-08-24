@@ -8,6 +8,11 @@ let keychainItemServiceName = null;
 export class BiometricAuth implements BiometricApi {
 	private laContext: LAContext;
 
+	deleteKey(keyName?: string) {
+		const useKeyName = keyName ?? keychainItemIdentifier;
+		BiometricAuth.deleteKeyChainEntry(useKeyName);
+	}
+
 	available(): Promise<BiometricIDAvailableResult> {
 		return new Promise((resolve, reject) => {
 			try {
@@ -84,44 +89,26 @@ export class BiometricAuth implements BiometricApi {
 					const bundleID = NSBundle.mainBundle.infoDictionary.objectForKey('CFBundleIdentifier');
 					keychainItemServiceName = `${bundleID}.TouchID`;
 				}
+
+				const keyName = options.keyName ?? keychainItemIdentifier;
+				const secret = options.secret ?? 'dummy content';
+
 				if (!options.ios?.fetchSecret) {
-					if (!BiometricAuth.createKeyChainEntry(options)) {
+					if (!BiometricAuth.updateKeyChainEntry(keyName, secret)) {
 						reject({
 							code: ERROR_CODES.UNEXPECTED_ERROR,
 							message: 'Unable to create KeyChain Entry',
 						});
+						return;
+					} else {
+						resolve({
+							code: ERROR_CODES.SUCCESS,
+							message: 'All OK',
+						});
+						return;
 					}
-				}
-				const query = NSMutableDictionary.alloc().init();
-				query.setObjectForKey(kSecClassGenericPassword, kSecClass);
-				query.setObjectForKey(options.keyName ?? keychainItemIdentifier, kSecAttrAccount);
-				query.setObjectForKey(keychainItemServiceName, kSecAttrService);
-				query.setObjectForKey(true, kSecReturnData);
-
-				// Note that you can only do this for Touch ID; for Face ID you need to tweak the plist value of NSFaceIDUsageDescription
-				query.setObjectForKey((options !== null && options.message) || 'Scan your finger', kSecUseOperationPrompt);
-
-				// Start the query and the fingerprint scan and/or device passcode validation
-				let data: NSData;
-				const valuePointer = new interop.Reference<NSData>(data);
-				const res = SecItemCopyMatching(query, valuePointer);
-				if (res === 0) {
-					let jsString: string;
-					if (options.ios?.fetchSecret) {
-						const code = NSUTF8StringEncoding;
-						let stringValue = NSString.alloc().initWithDataEncoding(valuePointer.value, code);
-						jsString = stringValue.toString();
-					}
-					resolve({
-						code: ERROR_CODES.SUCCESS,
-						message: 'All OK' + jsString,
-						decrypted: jsString,
-					});
 				} else {
-					reject({
-						code: ERROR_CODES.UNEXPECTED_ERROR,
-						message: 'SecItemCopyMatching Failed',
-					});
+					BiometricAuth.fetchKey(keyName, options, resolve, reject);
 				}
 			} catch (ex) {
 				console.log(`Error in biometric-auth.verifyBiometric: ${ex}`);
@@ -131,6 +118,39 @@ export class BiometricAuth implements BiometricApi {
 				});
 			}
 		});
+	}
+	static fetchKey(keyName: string, options: VerifyBiometricOptions, resolve: (value: BiometricResult | PromiseLike<BiometricResult>) => void, reject: (reason?: any) => void) {
+		const query = NSMutableDictionary.alloc().init();
+		query.setObjectForKey(kSecClassGenericPassword, kSecClass);
+		query.setObjectForKey(keyName, kSecAttrAccount);
+		query.setObjectForKey(keychainItemServiceName, kSecAttrService);
+		query.setObjectForKey(true, kSecReturnData);
+
+		// Note that you can only do this for Touch ID; for Face ID you need to tweak the plist value of NSFaceIDUsageDescription
+		query.setObjectForKey((options !== null && options.message) || 'Scan your finger', kSecUseOperationPrompt);
+
+		// Start the query and the fingerprint scan and/or device passcode validation
+		let data: NSData;
+		const valuePointer = new interop.Reference<NSData>(data);
+		const res = SecItemCopyMatching(query, valuePointer);
+		if (res === 0) {
+			let jsString: string;
+			if (options.ios?.fetchSecret) {
+				const code = NSUTF8StringEncoding;
+				let stringValue = NSString.alloc().initWithDataEncoding(valuePointer.value, code);
+				jsString = stringValue.toString();
+			}
+			resolve({
+				code: ERROR_CODES.SUCCESS,
+				message: 'All OK' + jsString,
+				decrypted: jsString,
+			});
+		} else {
+			reject({
+				code: ERROR_CODES.UNEXPECTED_ERROR,
+				message: 'SecItemCopyMatching Failed',
+			});
+		}
 	}
 
 	/**
@@ -191,12 +211,20 @@ export class BiometricAuth implements BiometricApi {
 		});
 	}
 
-	private static createKeyChainEntry(options: VerifyBiometricOptions): boolean {
-		const customSecret = options.keyName && options.secret;
+	private static updateKeyChainEntry(keyName: string, secret: string): boolean {
+		BiometricAuth.deleteKeyChainEntry(keyName);
+		return BiometricAuth.createKeyChainEntry(keyName, secret);
+	}
+	private static deleteKeyChainEntry(keyName: string) {
+		const query = NSMutableDictionary.alloc().init();
+		query.setObjectForKey(kSecClassGenericPassword, kSecClass);
+		query.setObjectForKey(keyName, kSecAttrAccount);
+		query.setObjectForKey(keychainItemServiceName, kSecAttrService);
 
-		const keyName = customSecret ? options.keyName : keychainItemIdentifier;
-		const secret = customSecret ? options.secret : 'dummy content';
+		SecItemDelete(query);
+	}
 
+	private static createKeyChainEntry(keyName: string, secret: string): boolean {
 		const attributes = NSMutableDictionary.new();
 		attributes.setObjectForKey(kSecClassGenericPassword, kSecClass);
 		attributes.setObjectForKey(keyName, kSecAttrAccount);
@@ -218,8 +246,13 @@ export class BiometricAuth implements BiometricApi {
 			const nsData = content.dataUsingEncoding(NSUTF8StringEncoding);
 			attributes.setObjectForKey(nsData, kSecValueData);
 
-			SecItemAdd(attributes, null);
-			return true;
+			const result = SecItemAdd(attributes, null);
+			if (result === 0) {
+				return true;
+			} else {
+				console.log('Unable to set key result', result);
+				return false;
+			}
 		}
 	}
 

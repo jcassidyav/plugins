@@ -13,5 +13,13 @@ export declare class BiometricAuth implements BiometricApi {
 	verifyBiometric(options: VerifyBiometricOptions): Promise<BiometricResult>;
 
 	close(): void;
+
+	/**
+	 *
+	 * When usimg encryption backed biometrics keys are generated, this allow you to remove the key.
+	 *
+	 * @param keyName Optional keyName to delete, if not supplied will delete the default key.
+	 */
+	deleteKey(keyName?: string): void;
 }
 export { BiometricResult, ERROR_CODES };

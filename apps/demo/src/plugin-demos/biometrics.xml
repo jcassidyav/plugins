@@ -22,6 +22,8 @@
                 
                 <Button text="verify with encryption" tap="{{ doVerifyFingerprintWithEncrypt }}" class="btn btn-primary" />
                  <Button text="verify with decryption" tap="{{ doVerifyFingerprintWithDecrypt }}" class="btn btn-primary" />
+                 <Button text="delete Key" tap="{{ doDeleteKey }}" class="btn btn-primary" />
+                 
                  	<TextField text="{{ encryptedPassword }}" ></TextField>
                   <TextField text="{{ IV }}"></TextField>
                   <TextField text="{{ decryptedPassword }}"></TextField>
