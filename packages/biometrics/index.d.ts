@@ -2,7 +2,7 @@ export * from './common';
 import { BiometricIDAvailableResult, BiometricApi, VerifyBiometricOptions, BiometricResult, ERROR_CODES } from './common';
 export declare class BiometricAuth implements BiometricApi {
 	available(): Promise<BiometricIDAvailableResult>;
-	didBiometricDatabaseChange(): Promise<boolean>;
+	didBiometricDatabaseChange(options?: VerifyBiometricOptions): Promise<boolean>;
 	/**
 	 * IOS: This 'default' method uses keychain instead of localauth so the passcode fallback can be used
 	 *
