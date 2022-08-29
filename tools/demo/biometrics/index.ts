@@ -9,6 +9,7 @@ export class DemoSharedBiometrics extends DemoSharedBase {
 	encryptedPassword: string = 'WIll Hold Encrypted Password';
 	IV: string = 'WIll Hold IV';
 	decryptedPassword = CONFIGURED_PASSWORD;
+	androidKeyTimeout = 0;
 	constructor() {
 		super();
 		this.fingerprintAuth = new BiometricAuth();
@@ -110,6 +111,7 @@ export class DemoSharedBiometrics extends DemoSharedBase {
 				pinFallback: false,
 				keyName: 'MySecretKeyName',
 				secret: this.decryptedPassword,
+				android: { validityDuration: this.androidKeyTimeout },
 			})
 			.then((result) => {
 				this.setProperty('encryptedPassword', result.encrypted);
@@ -125,7 +127,7 @@ export class DemoSharedBiometrics extends DemoSharedBase {
 				message: 'Scan yer finger', // optional
 				pinFallback: false,
 				keyName: 'MySecretKeyName',
-				android: { decryptText: this.encryptedPassword, iv: this.IV },
+				android: { decryptText: this.encryptedPassword, iv: this.IV, validityDuration: this.androidKeyTimeout },
 				ios: { fetchSecret: true },
 			})
 			.then((result) => {

@@ -16,7 +16,7 @@ export declare class BiometricAuth implements BiometricApi {
 
 	/**
 	 *
-	 * When usimg encryption backed biometrics keys are generated, this allow you to remove the key.
+	 * When using encryption backed biometrics keys are generated, this allow you to remove the key.
 	 *
 	 * @param keyName Optional keyName to delete, if not supplied will delete the default key.
 	 */

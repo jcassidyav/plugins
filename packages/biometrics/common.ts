@@ -81,6 +81,11 @@ export interface AndroidOptions {
 	 * Retrieved from the result of an encryption.
 	 */
 	iv?: string;
+
+	/**
+	 * The period in seconds for which operations on the key are valid without triggering a biometric prompt.
+	 */
+	validityDuration?: number;
 }
 
 export interface BiometricIDAvailableResult {

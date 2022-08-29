@@ -15,6 +15,8 @@ const AuthenticationCallback = (<any>androidx.biometric.BiometricPrompt.Authenti
 	toDecrypt: null,
 	IV: null,
 	pinFallBack: false,
+	options: null,
+
 	onAuthenticationError(code: number, error: string) {
 		let returnCode: ERROR_CODES;
 		let message: string;
@@ -45,34 +47,17 @@ const AuthenticationCallback = (<any>androidx.biometric.BiometricPrompt.Authenti
 		// Called on every failure
 	},
 	onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult): void {
-		let encrypted: string;
-		let decrypted: string;
-		let iv: string;
 		try {
-			if (this.toEncrypt) {
-				// Howto do the encrypt/decrypt ?
-				const nativeString = new java.lang.String(this.toEncrypt.toString());
-				const nativeBytes = nativeString.getBytes('UTF-8');
-				const cipher = result.getCryptoObject().getCipher();
-				const encryptedArray = cipher.doFinal(nativeBytes);
-				encrypted = android.util.Base64.encodeToString(encryptedArray, android.util.Base64.DEFAULT).toString();
-				iv = android.util.Base64.encodeToString(cipher.getIV(), android.util.Base64.DEFAULT).toString();
-			} else if (this.toDecrypt) {
-				const nativeBytes = android.util.Base64.decode(this.toDecrypt, android.util.Base64.DEFAULT);
-
-				const decryptedBytes = result.getCryptoObject().getCipher().doFinal(nativeBytes);
-				decrypted = new java.lang.String(decryptedBytes, java.nio.charset.StandardCharsets.UTF_8).toString();
-			} else if (!this.pinFallBack) {
-				result.getCryptoObject().getCipher().doFinal(SECRET_BYTE_ARRAY);
+			const options: VerifyBiometricOptions = this.options;
+			let cipher;
+			if (!this.pinFallBack) {
+				if (options?.android?.validityDuration > 0) {
+					cipher = BiometricAuth.getAndInitSecretKey(options);
+				} else {
+					cipher = result.getCryptoObject().getCipher();
+				}
 			}
-
-			this.resolve({
-				code: ERROR_CODES.SUCCESS,
-				message: 'All OK',
-				encrypted,
-				decrypted,
-				iv,
-			});
+			BiometricAuth.performCrypto(options, cipher, this.resolve);
 		} catch (error) {
 			console.log(`Error in onAuthenticationSucceeded: ${error}`);
 			this.reject({
@@ -152,8 +137,8 @@ export class BiometricAuth implements BiometricApi {
 		if (!options?.pinFallback) {
 			// If pin fallback is used the key is never used.
 			try {
-				const cipher = this.getCipher();
-				const secretKey = this.getSecretKey(options?.keyName ?? KEY_NAME);
+				const cipher = BiometricAuth.getCipher();
+				const secretKey = BiometricAuth.getSecretKey(options?.keyName ?? KEY_NAME);
 				if (secretKey) {
 					// No Key then there is nothing to check as it cannot have changed.
 					const keyMode = javax.crypto.Cipher.ENCRYPT_MODE;
@@ -181,33 +166,41 @@ export class BiometricAuth implements BiometricApi {
 		return Promise.resolve({ code: ERROR_CODES.SUCCESS, message: 'OK' });
 	}
 
-	private generateCryptoObject(options: VerifyBiometricOptions): Promise<androidx.biometric.BiometricPrompt.CryptoObject> {
+	private generateCryptoObject(options: VerifyBiometricOptions): Promise<javax.crypto.Cipher> {
 		if (options.pinFallback) {
 			return Promise.resolve(null);
 		} else {
 			return BiometricAuth.generateSecretKey(options).then(() => {
 				try {
-					const cipher = this.getAndInitSecretKey(options);
+					const cipher = BiometricAuth.getAndInitSecretKey(options);
 
-					return org.nativescript.plugins.fingerprint.Utils.createCryptoObject(cipher);
+					return cipher; // return the cypher not the crypto
 				} catch (ex) {
 					console.log(ex);
-					// handle invalid key
-					if (ex.nativeException instanceof android.security.keystore.KeyPermanentlyInvalidatedException) {
-						if (options?.android?.decryptText) {
+
+					if (options?.android?.validityDuration > 0 && ex.nativeException instanceof android.security.keystore.UserNotAuthenticatedException) {
+						// check for access denied
+
+						console.log('Am doing the timeout thing');
+						return Promise.resolve(null);
+					} else {
+						// handle invalid key
+						if (ex.nativeException instanceof android.security.keystore.KeyPermanentlyInvalidatedException) {
+							if (options?.android?.decryptText) {
+								return Promise.reject({
+									code: ERROR_CODES.UNEXPECTED_ERROR,
+									message: 'Key permanently invalidated',
+								});
+							} else {
+								this.deleteKey(options.keyName);
+								return this.generateCryptoObject(options);
+							}
+						} else {
 							return Promise.reject({
 								code: ERROR_CODES.UNEXPECTED_ERROR,
-								message: 'Key permanently invalidated',
+								message: ex,
 							});
-						} else {
-							this.deleteSecretKey(options.keyName);
-							return this.generateCryptoObject(options);
 						}
-					} else {
-						return Promise.reject({
-							code: ERROR_CODES.UNEXPECTED_ERROR,
-							message: ex,
-						});
 					}
 				}
 			});
@@ -217,8 +210,18 @@ export class BiometricAuth implements BiometricApi {
 	// Following: https://developer.android.com/training/sign-in/biometric-auth#java as a guide
 	verifyBiometric(options: VerifyBiometricOptions): Promise<BiometricResult> {
 		return this.checkConfigured().then(() => {
-			return this.generateCryptoObject(options).then((cryptoObject) => {
+			return this.generateCryptoObject(options).then((cipher) => {
 				return new Promise<BiometricResult>((resolve, reject) => {
+					if (cipher && options?.android?.validityDuration > 0 && !options?.pinFallback && (options?.secret || options?.android?.decryptText)) {
+						console.log('Attempt operation 2');
+						try {
+							BiometricAuth.performCrypto(options, cipher, resolve);
+							return;
+						} catch (onetryException) {
+							console.log('Attempted and failed');
+						}
+					}
+
 					try {
 						const pinFallback = options?.pinFallback;
 
@@ -229,6 +232,8 @@ export class BiometricAuth implements BiometricApi {
 						authCallback.toEncrypt = options?.secret;
 						authCallback.toDecrypt = options?.android?.decryptText;
 						authCallback.pinFallBack = pinFallback;
+						authCallback.options = options;
+
 						this.biometricPrompt = new androidx.biometric.BiometricPrompt(this.getActivity(), executor, authCallback);
 
 						if (pinFallback && sdkVersion < 30) {
@@ -241,6 +246,18 @@ export class BiometricAuth implements BiometricApi {
 								.setConfirmationRequired(options.confirm ? options.confirm : false) // Confirm button after verify biometrics=
 								.setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG | androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL); // PIN Fallback or Cancel
 							this.biometricPrompt.authenticate(builder.build());
+						}
+						if (options?.android?.validityDuration > 0) {
+							const info = new androidx.biometric.BiometricPrompt.PromptInfo.Builder()
+								.setTitle(options.title ? options.title : 'Login')
+								.setSubtitle(options.subTitle ? options.subTitle : null)
+								.setDescription(options.message ? options.message : null)
+								.setConfirmationRequired(options.confirm ? options.confirm : false) // Confirm button after verify biometrics=
+								.setNegativeButtonText(options.fallbackMessage ? options.fallbackMessage : 'Cancel') // PIN Fallback or Cancel
+								.setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG) // PIN Fallback or Cancel
+								.build();
+
+							this.biometricPrompt.authenticate(info);
 						} else {
 							const info = new androidx.biometric.BiometricPrompt.PromptInfo.Builder()
 								.setTitle(options.title ? options.title : 'Login')
@@ -251,7 +268,7 @@ export class BiometricAuth implements BiometricApi {
 								.setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG) // PIN Fallback or Cancel
 								.build();
 
-							this.biometricPrompt.authenticate(info, cryptoObject);
+							this.biometricPrompt.authenticate(info, org.nativescript.plugins.fingerprint.Utils.createCryptoObject(cipher));
 						}
 					} catch (ex) {
 						console.log(`Error in biometrics-auth.verifyBiometric: ${ex}`);
@@ -265,9 +282,41 @@ export class BiometricAuth implements BiometricApi {
 		});
 	}
 
-	getAndInitSecretKey(options: VerifyBiometricOptions) {
-		const cipher = this.getCipher();
-		const secretKey = this.getSecretKey(options?.keyName ?? KEY_NAME);
+	static performCrypto(options: VerifyBiometricOptions, cipher: javax.crypto.Cipher, resolve: (value: BiometricResult | PromiseLike<BiometricResult>) => void) {
+		let encrypted: string;
+		let decrypted: string;
+		let iv: string;
+		const toEncrypt = options?.secret;
+		const toDecrypt = options?.android?.decryptText;
+
+		if (toEncrypt) {
+			const nativeString = new java.lang.String(toEncrypt.toString());
+			const nativeBytes = nativeString.getBytes('UTF-8');
+
+			const encryptedArray = cipher.doFinal(nativeBytes);
+			encrypted = android.util.Base64.encodeToString(encryptedArray, android.util.Base64.DEFAULT).toString();
+			iv = android.util.Base64.encodeToString(cipher.getIV(), android.util.Base64.DEFAULT).toString();
+		} else if (toDecrypt) {
+			const nativeBytes = android.util.Base64.decode(toDecrypt, android.util.Base64.DEFAULT);
+
+			const decryptedBytes = cipher.doFinal(nativeBytes);
+			decrypted = new java.lang.String(decryptedBytes, java.nio.charset.StandardCharsets.UTF_8).toString();
+		} else if (!options?.pinFallback) {
+			cipher.doFinal(SECRET_BYTE_ARRAY);
+		}
+
+		resolve({
+			code: ERROR_CODES.SUCCESS,
+			message: 'All OK',
+			encrypted,
+			decrypted,
+			iv,
+		});
+	}
+
+	static getAndInitSecretKey(options: VerifyBiometricOptions) {
+		const cipher = BiometricAuth.getCipher();
+		const secretKey = BiometricAuth.getSecretKey(options?.keyName ?? KEY_NAME);
 		const keyMode = options?.android?.decryptText ? javax.crypto.Cipher.DECRYPT_MODE : javax.crypto.Cipher.ENCRYPT_MODE;
 
 		if (keyMode === javax.crypto.Cipher.DECRYPT_MODE) {
@@ -287,6 +336,41 @@ export class BiometricAuth implements BiometricApi {
 		this.biometricPrompt?.cancelAuthentication();
 	}
 
+	deleteKey(keyName?: string) {
+		BiometricAuth.removeKey(keyName);
+	}
+
+	private static removeKey(keyName?: string) {
+		const keyStore = java.security.KeyStore.getInstance('AndroidKeyStore');
+
+		// Before the keystore can be accessed, it must be loaded.
+		keyStore.load(null);
+		if (keyStore.containsAlias(keyName ?? KEY_NAME)) {
+			keyStore.deleteEntry(keyName ?? KEY_NAME);
+		}
+	}
+	private static isKeyMatchingParameters(key: java.security.Key, options: VerifyBiometricOptions) {
+		try {
+			const factory = javax.crypto.SecretKeyFactory.getInstance(key.getAlgorithm(), 'AndroidKeyStore');
+
+			const keyInfo = factory.getKeySpec(key as javax.crypto.SecretKey, android.security.keystore.KeyInfo.class) as android.security.keystore.KeyInfo;
+
+			if (keyInfo.getUserAuthenticationValidityDurationSeconds() == options.android?.validityDuration) {
+				// Key does not match delete
+				console.log('Key does match:', keyInfo.getUserAuthenticationValidityDurationSeconds(), java.lang.Integer.valueOf(options.android?.validityDuration));
+				return true;
+			} else {
+				console.log('Key does not match:', keyInfo.getUserAuthenticationValidityDurationSeconds(), options.android?.validityDuration);
+			}
+
+			// test strength etc.
+		} catch (e) {
+			// Not an Android KeyStore key.
+			console.log(e);
+		}
+		return false;
+	}
+
 	/**
 	 * Creates a symmetric key in the Android Key Store which can only be used after the user has
 	 * authenticated with device credentials within the last X seconds.
@@ -298,16 +382,23 @@ export class BiometricAuth implements BiometricApi {
 		const keyName = options?.keyName ?? KEY_NAME;
 		if (options.keyName && (options.android?.decryptText || options.secret)) {
 			const key = keyStore.getKey(keyName, null);
-			if (key) return Promise.resolve();
-			// key already exists
-			else {
-				// need to reject as can neve decrypt without a key.
-				if (options.android?.decryptText) {
-					return Promise.reject({
-						code: ERROR_CODES.UNEXPECTED_ERROR,
-						message: `Key not available: ${keyName}`,
-					});
+			if (key) {
+				if (this.isKeyMatchingParameters(key, options)) {
+					return Promise.resolve();
 				}
+
+				// if this is an encryption then delete
+				if (!options.android?.decryptText) {
+					BiometricAuth.removeKey(options.keyName);
+				}
+			}
+
+			// need to reject as can never decrypt without a key.
+			if (options.android?.decryptText) {
+				return Promise.reject({
+					code: ERROR_CODES.UNEXPECTED_ERROR,
+					message: `Key not available: ${keyName}`,
+				});
 			}
 		}
 
@@ -316,11 +407,19 @@ export class BiometricAuth implements BiometricApi {
 		if (sdkVersion > 23) {
 			builder.setInvalidatedByBiometricEnrollment(true);
 		}
+		if (options?.android?.validityDuration > 0) {
+			if (sdkVersion >= 30) {
+				(<any>builder).setUserAuthenticationParameters(java.lang.Integer.valueOf(options?.android?.validityDuration).intValue(), (<any>android).security.keystore.KeyProperties.AUTH_BIOMETRIC_STRONG);
+			} else {
+				builder.setUserAuthenticationValidityDurationSeconds(java.lang.Integer.valueOf(options?.android?.validityDuration).intValue());
+			}
+		}
+
 		keyGenerator.init(builder.build());
 		keyGenerator.generateKey();
 		return Promise.resolve();
 	}
-	public promptForPin(resolve, reject, options) {
+	private promptForPin(resolve, reject, options) {
 		const onActivityResult = (data: AndroidActivityResultEventData) => {
 			if (data.requestCode === REQUEST_CODE_CONFIRM_DEVICE_CREDENTIALS) {
 				if (data.resultCode === android.app.Activity.RESULT_OK) {
@@ -346,23 +445,16 @@ export class BiometricAuth implements BiometricApi {
 
 		this.showAuthenticationScreen(options);
 	}
-	private getSecretKey(keyName?: string) {
+
+	private static getSecretKey(keyName?: string) {
 		const keyStore = java.security.KeyStore.getInstance('AndroidKeyStore');
 
 		// Before the keystore can be accessed, it must be loaded.
 		keyStore.load(null);
 		return keyStore.getKey(keyName ?? KEY_NAME, null);
 	}
-	private deleteSecretKey(keyName?: string) {
-		const keyStore = java.security.KeyStore.getInstance('AndroidKeyStore');
 
-		// Before the keystore can be accessed, it must be loaded.
-		keyStore.load(null);
-		if (keyStore.containsAlias(keyName ?? KEY_NAME)) {
-			keyStore.deleteEntry(keyName ?? KEY_NAME);
-		}
-	}
-	private getCipher(): javax.crypto.Cipher {
+	private static getCipher(): javax.crypto.Cipher {
 		return javax.crypto.Cipher.getInstance(`${android.security.keystore.KeyProperties.KEY_ALGORITHM_AES}/${android.security.keystore.KeyProperties.BLOCK_MODE_CBC}/${android.security.keystore.KeyProperties.ENCRYPTION_PADDING_PKCS7}`);
 	}
 
