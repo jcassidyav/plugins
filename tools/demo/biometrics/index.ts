@@ -25,18 +25,18 @@ export class DemoSharedBiometrics extends DemoSharedBase {
 			.then((result: BiometricIDAvailableResult) => {
 				console.log('doCheckAvailable result: ' + JSON.stringify(result));
 
-				let availbleBio: string = 'None';
+				let availableBio: string = 'None';
 				if (result.face) {
-					availbleBio = 'Face';
+					availableBio = 'Face';
 				} else if (result.touch) {
-					availbleBio = 'Touch';
+					availableBio = 'Touch';
 				} else if (result.biometrics) {
-					availbleBio = 'Biometrics';
+					availableBio = 'Biometrics';
 				} else if (result.any) {
-					availbleBio = 'Pin';
+					availableBio = 'Pin';
 				}
 
-				this.set('status', 'Biometric ID available? - ' + availbleBio);
+				this.set('status', 'Biometric ID available? - ' + availableBio);
 			})
 			.catch((err) => {
 				console.log('doCheckAvailable error: ' + err);

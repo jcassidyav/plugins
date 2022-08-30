@@ -176,12 +176,8 @@ export class BiometricAuth implements BiometricApi {
 
 					return cipher; // return the cypher not the crypto
 				} catch (ex) {
-					console.log(ex);
-
 					if (options?.android?.validityDuration > 0 && ex.nativeException instanceof android.security.keystore.UserNotAuthenticatedException) {
-						// check for access denied
-
-						console.log('Am doing the timeout thing');
+						// check for access denied will need to do bio first
 						return Promise.resolve(null);
 					} else {
 						// handle invalid key
@@ -213,12 +209,11 @@ export class BiometricAuth implements BiometricApi {
 			return this.generateCryptoObject(options).then((cipher) => {
 				return new Promise<BiometricResult>((resolve, reject) => {
 					if (cipher && options?.android?.validityDuration > 0 && !options?.pinFallback && (options?.secret || options?.android?.decryptText)) {
-						console.log('Attempt operation 2');
 						try {
 							BiometricAuth.performCrypto(options, cipher, resolve);
 							return;
 						} catch (onetryException) {
-							console.log('Attempted and failed');
+							// attempt failed trigger bio
 						}
 					}
 
@@ -246,8 +241,7 @@ export class BiometricAuth implements BiometricApi {
 								.setConfirmationRequired(options.confirm ? options.confirm : false) // Confirm button after verify biometrics=
 								.setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG | androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL); // PIN Fallback or Cancel
 							this.biometricPrompt.authenticate(builder.build());
-						}
-						if (options?.android?.validityDuration > 0) {
+						} else if (options?.android?.validityDuration > 0) {
 							const info = new androidx.biometric.BiometricPrompt.PromptInfo.Builder()
 								.setTitle(options.title ? options.title : 'Login')
 								.setSubtitle(options.subTitle ? options.subTitle : null)
@@ -349,13 +343,24 @@ export class BiometricAuth implements BiometricApi {
 			keyStore.deleteEntry(keyName ?? KEY_NAME);
 		}
 	}
+
+	private static compareKeyDuration(keyDuration: number, optionsDuration): boolean {
+		const onceOnlyDuration = optionsDuration === undefined || optionsDuration == 0 ? true : false;
+
+		if ((onceOnlyDuration && (keyDuration === 0 || keyDuration == -1)) || keyDuration == optionsDuration) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	private static isKeyMatchingParameters(key: java.security.Key, options: VerifyBiometricOptions) {
 		try {
 			const factory = javax.crypto.SecretKeyFactory.getInstance(key.getAlgorithm(), 'AndroidKeyStore');
 
 			const keyInfo = factory.getKeySpec(key as javax.crypto.SecretKey, android.security.keystore.KeyInfo.class) as android.security.keystore.KeyInfo;
 
-			if (keyInfo.getUserAuthenticationValidityDurationSeconds() == options.android?.validityDuration) {
+			if (BiometricAuth.compareKeyDuration(keyInfo.getUserAuthenticationValidityDurationSeconds(), options.android?.validityDuration)) {
 				// Key does not match delete
 				console.log('Key does match:', keyInfo.getUserAuthenticationValidityDurationSeconds(), java.lang.Integer.valueOf(options.android?.validityDuration));
 				return true;
@@ -414,7 +419,6 @@ export class BiometricAuth implements BiometricApi {
 				builder.setUserAuthenticationValidityDurationSeconds(java.lang.Integer.valueOf(options?.android?.validityDuration).intValue());
 			}
 		}
-
 		keyGenerator.init(builder.build());
 		keyGenerator.generateKey();
 		return Promise.resolve();
@@ -423,14 +427,28 @@ export class BiometricAuth implements BiometricApi {
 		const onActivityResult = (data: AndroidActivityResultEventData) => {
 			if (data.requestCode === REQUEST_CODE_CONFIRM_DEVICE_CREDENTIALS) {
 				if (data.resultCode === android.app.Activity.RESULT_OK) {
-					// OK = -1
-					// the user has just authenticated via the ConfirmDeviceCredential activity
-					resolve({
-						code: ERROR_CODES.SUCCESS,
-						message: 'All OK',
-					});
+					if (!options?.pinFallBack) {
+						if (options?.android?.validityDuration > 0) {
+							try {
+								const cipher = BiometricAuth.getAndInitSecretKey(options);
+								BiometricAuth.performCrypto(options, cipher, resolve);
+							} catch {
+								reject({
+									code: ERROR_CODES.UNEXPECTED_ERROR,
+									message: 'Unable to perform Crypto Operation',
+								});
+							}
+						}
+					} else {
+						// OK = -1
+						// the user has just authenticated via the ConfirmDeviceCredential activity
+						resolve({
+							code: ERROR_CODES.SUCCESS,
+							message: 'All OK',
+						});
+					}
 				} else {
-					// the user has quit the activity without providing credendials
+					// the user has quit the activity without providing credentials
 
 					reject({
 						code: ERROR_CODES.USER_CANCELLED,
