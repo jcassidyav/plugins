@@ -122,9 +122,17 @@ export interface BiometricApi {
 	verifyBiometric(options: VerifyBiometricOptions): Promise<BiometricResult>;
 
 	/**
-	 * Note will not do anyting on android if using pin fallback.
+	 * Note will not do anything on android if using pin fallback.
 	 */
 	close(): void;
+
+	/**
+	 *
+	 * When using encryption backed biometrics keys are generated, this allow you to remove the key.
+	 *
+	 * @param keyName Optional keyName to delete, if not supplied will delete the default key.
+	 */
+	deleteKey(keyName?: string): void;
 }
 
 export interface BiometricResult {
