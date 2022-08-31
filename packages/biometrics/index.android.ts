@@ -362,12 +362,8 @@ export class BiometricAuth implements BiometricApi {
 
 			if (BiometricAuth.compareKeyDuration(keyInfo.getUserAuthenticationValidityDurationSeconds(), options.android?.validityDuration)) {
 				// Key does not match delete
-				console.log('Key does match:', keyInfo.getUserAuthenticationValidityDurationSeconds(), java.lang.Integer.valueOf(options.android?.validityDuration));
 				return true;
-			} else {
-				console.log('Key does not match:', keyInfo.getUserAuthenticationValidityDurationSeconds(), options.android?.validityDuration);
 			}
-
 			// test strength etc.
 		} catch (e) {
 			// Not an Android KeyStore key.
@@ -429,15 +425,10 @@ export class BiometricAuth implements BiometricApi {
 				if (data.resultCode === android.app.Activity.RESULT_OK) {
 					if (!options?.pinFallBack) {
 						if (options?.android?.validityDuration > 0) {
-							try {
-								const cipher = BiometricAuth.getAndInitSecretKey(options);
-								BiometricAuth.performCrypto(options, cipher, resolve);
-							} catch {
-								reject({
-									code: ERROR_CODES.UNEXPECTED_ERROR,
-									message: 'Unable to perform Crypto Operation',
-								});
-							}
+							reject({
+								code: ERROR_CODES.UNEXPECTED_ERROR,
+								message: 'Unable to perform Crypto Operation',
+							});
 						}
 					} else {
 						// OK = -1

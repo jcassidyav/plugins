@@ -81,7 +81,7 @@ export class BiometricAuth implements BiometricApi {
 		return new Promise((resolve, reject) => {
 			try {
 				if (options.pinFallback) {
-					this.verifyBiometricWithCustomFallback(options, true).then(resolve, reject);
+					this.verifyBiometricWithCustomFallback(options).then(resolve, reject);
 					return;
 				}
 
@@ -137,7 +137,7 @@ export class BiometricAuth implements BiometricApi {
 			let jsString: string;
 			if (options.ios?.fetchSecret) {
 				const code = NSUTF8StringEncoding;
-				let stringValue = NSString.alloc().initWithDataEncoding(valuePointer.value, code);
+				const stringValue = NSString.alloc().initWithDataEncoding(valuePointer.value, code);
 				jsString = stringValue.toString();
 			}
 			resolve({
@@ -156,7 +156,7 @@ export class BiometricAuth implements BiometricApi {
 	/**
 	 * This implementation uses LocalAuthentication and has no built-in passcode fallback
 	 */
-	private verifyBiometricWithCustomFallback(options: VerifyBiometricOptions, usePasscodeFallback = false): Promise<BiometricResult> {
+	private verifyBiometricWithCustomFallback(options: VerifyBiometricOptions): Promise<BiometricResult> {
 		return new Promise((resolve, reject) => {
 			try {
 				this.laContext = LAContext.new();
