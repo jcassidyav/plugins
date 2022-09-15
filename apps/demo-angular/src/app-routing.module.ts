@@ -24,6 +24,7 @@ const routes: Routes = [
 	{ path: 'email', loadChildren: () => import('./plugin-demos/email.module').then((m) => m.EmailModule) },
 	{ path: 'facebook', loadChildren: () => import('./plugin-demos/facebook.module').then((m) => m.FacebookModule) },
 	{ path: 'fingerprint-auth', loadChildren: () => import('./plugin-demos/fingerprint-auth.module').then((m) => m.FingerprintAuthModule) },
+	{ path: 'fonts', loadChildren: () => import('./plugin-demos/fonts.module').then((m) => m.FontsModule) },
 	{ path: 'geolocation', loadChildren: () => import('./plugin-demos/geolocation.module').then((m) => m.GeolocationModule) },
 	{ path: 'google-maps', loadChildren: () => import('./plugin-demos/google-maps.module').then((m) => m.GoogleMapsModule) },
 	{ path: 'google-signin', loadChildren: () => import('./plugin-demos/google-signin.module').then((m) => m.GoogleSigninModule) },

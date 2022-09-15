@@ -36,6 +36,7 @@
 		"theme-switcher": "packages/theme-switcher",
 		"twitter": "packages/twitter",
 		"zip": "packages/zip",
-		"haptics": "packages/haptics"
+		"haptics": "packages/haptics",
+		"fonts": "packages/fonts"
 	}
 }

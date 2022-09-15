@@ -60,7 +60,8 @@
 			"@nativescript/theme-switcher": ["packages/theme-switcher/index.ts"],
 			"@nativescript/twitter": ["packages/twitter/index.d.ts"],
 			"@nativescript/zip": ["packages/zip/index.d.ts"],
-			"@nativescript/haptics": ["packages/haptics/index.d.ts"]
+			"@nativescript/haptics": ["packages/haptics/index.d.ts"],
+			"@nativescript/fonts": ["packages/fonts/index.d.ts"]
 		}
 	},
 	"exclude": ["node_modules", "tmp"]

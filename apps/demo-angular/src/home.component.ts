@@ -58,6 +58,9 @@ export class HomeComponent {
 			name: 'fingerprint-auth',
 		},
 		{
+			name: 'fonts',
+		},
+		{
 			name: 'geolocation',
 		},
 		{

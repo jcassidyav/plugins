@@ -16,6 +16,7 @@ export * from './directions';
 export * from './email';
 export * from './facebook';
 export * from './fingerprint-auth';
+export * from './fonts';
 export * from './geolocation';
 export * from './google-maps';
 export * from './google-signin';
