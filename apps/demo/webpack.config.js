@@ -1,6 +1,6 @@
 const webpack = require('@nativescript/webpack');
 const { resolve } = require('path');
-const { addFontsCongigFontAwesome } = require('@nativescript/fonts');
+const { addFontsCongigFontAwesome, addFontsCongigMDIFont } = require('@nativescript/fonts');
 module.exports = (env) => {
 	webpack.init(env);
 	webpack.useConfig('typescript');
@@ -12,7 +12,9 @@ module.exports = (env) => {
 		config.resolve.alias.set('@demo/shared', resolve(__dirname, '..', '..', 'tools', 'demo'));
 	});
 
-	addFontsCongigFontAwesome();
+	//	addFontsCongigFontAwesome();
+
+	addFontsCongigMDIFont();
 
 	// Example if you need to share images across demo apps:
 	// webpack.Utils.addCopyRule({
