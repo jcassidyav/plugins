@@ -191,20 +191,8 @@ export class ImagePicker extends ImagePickerBase {
 
 	authorize(): Promise<AuthorizationResult> {
 		let requested: { [key: string]: permissions.PermissionOptions } = {};
-		if ((<any>android).os.Build.VERSION.SDK_INT >= 33 && Utils.ad.getApplicationContext().getApplicationInfo().targetSdkVersion >= 33) {
-			const mediaPerms = {
-				photo: { reason: 'To pick images from your gallery' },
-				video: { reason: 'To pick videos from your gallery' },
-			};
-			if (this.mediaType === 'image/*') {
-				requested['photo'] = mediaPerms['photo'];
-			} else if (this.mediaType === 'video/*') {
-				requested['video'] = mediaPerms['video'];
-			} else {
-				requested = mediaPerms;
-			}
-
-			return permissions.request(requested).then((result) => this.mapResult(result));
+		if ((<any>android).os.Build.VERSION.SDK_INT >= 29 && Utils.ad.getApplicationContext().getApplicationInfo().targetSdkVersion >= 29) {
+			return Promise.resolve({ details: null, authorized: true });
 		} else if ((<any>android).os.Build.VERSION.SDK_INT >= 23) {
 			requested['storage'] = { read: true, write: false };
 			return permissions.request(requested).then((result) => this.mapResult(result));
