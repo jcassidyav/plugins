@@ -25,7 +25,7 @@ export interface RemoveAllOptions {
 
 export abstract class SecureStorageCommon {
 	protected static IS_FIRST_RUN = '__IS_FIRST_RUN__';
-	private isFirst: boolean;
+	protected isFirst: boolean;
 
 	constructor() {
 		this.isFirst = ApplicationSettings.getBoolean(SecureStorageCommon.IS_FIRST_RUN, true);

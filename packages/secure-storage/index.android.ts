@@ -1,53 +1,62 @@
 import { GetOptions, SetOptions, RemoveOptions, RemoveAllOptions, SecureStorageCommon } from './common';
-import { Utils } from '@nativescript/core';
+import { ApplicationSettings } from '@nativescript/core';
 
 declare const com: any;
 
 export class SecureStorage extends SecureStorageCommon {
-	private hawk: any; // com.orhanobut.hawk.Hawk
+	protected static IS_FIRST_RUNA = '__IS_FIRST_RUN__A';
 
 	constructor() {
 		super();
-		this.hawk = com.orhanobut.hawk.Hawk.init(Utils.android.getApplicationContext()).build();
+		this.isFirst = ApplicationSettings.getBoolean(SecureStorage.IS_FIRST_RUNA, true);
+		if (this.isFirst) {
+			ApplicationSettings.setBoolean(SecureStorage.IS_FIRST_RUNA, false);
+		}
 	}
 
 	get(arg: GetOptions): Promise<any> {
 		return new Promise((resolve, reject) => {
-			resolve(com.orhanobut.hawk.Hawk.get(arg.key));
+			resolve(this.getSync(arg));
 		});
 	}
 
 	getSync(arg: GetOptions): any {
-		return com.orhanobut.hawk.Hawk.get(arg.key);
+		const result = ApplicationSettings.getString(arg.key);
+		return result === undefined ? null : result;
 	}
 
 	set(arg: SetOptions): Promise<boolean> {
 		return new Promise((resolve, reject) => {
-			resolve(com.orhanobut.hawk.Hawk.put(arg.key, arg.value));
+			resolve(this.setSync(arg));
 		});
 	}
 
 	setSync(arg: SetOptions): boolean {
-		return com.orhanobut.hawk.Hawk.put(arg.key, arg.value);
+		ApplicationSettings.setString(arg.key, arg.value);
+		return true;
 	}
 
 	remove(arg: RemoveOptions): Promise<boolean> {
 		return new Promise((resolve, reject) => {
-			resolve(com.orhanobut.hawk.Hawk.delete(arg.key));
+			resolve(this.removeSync(arg));
 		});
 	}
 
 	removeSync(arg: RemoveOptions): boolean {
-		return com.orhanobut.hawk.Hawk.delete(arg.key);
+		ApplicationSettings.remove(arg.key);
+		return true;
 	}
 
 	removeAll(arg?: RemoveAllOptions): Promise<boolean> {
 		return new Promise((resolve, reject) => {
-			resolve(com.orhanobut.hawk.Hawk.deleteAll());
+			resolve(this.removeAllSync());
 		});
 	}
 
 	removeAllSync(arg?: RemoveAllOptions): boolean {
-		return com.orhanobut.hawk.Hawk.deleteAll();
+		//Get first run
+		ApplicationSettings.clear();
+		//reset first run
+		return true;
 	}
 }
